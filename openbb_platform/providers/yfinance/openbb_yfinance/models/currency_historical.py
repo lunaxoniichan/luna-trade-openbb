@@ -3,6 +3,7 @@
 # pylint: disable=unused-argument
 
 from datetime import datetime
+import math
 from typing import Any, Literal
 
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -132,4 +133,28 @@ class YFinanceCurrencyHistoricalFetcher(
         **kwargs: Any,
     ) -> list[YFinanceCurrencyHistoricalData]:
         """Transform the data to the standard format."""
-        return [YFinanceCurrencyHistoricalData.model_validate(d) for d in data]
+        # yfinance (and some upstream FX pairs) can occasionally produce NaN/Infinity.
+        # Those values are not JSON-compliant and can blow up response serialization.
+        # We fail explicitly so the API error is deterministic and descriptive.
+        float_fields = ("close", "open", "high", "low", "volume", "vwap")
+
+        sanitized: list[YFinanceCurrencyHistoricalData] = []
+        for record in data:
+            normalized = dict(record)
+            for field in float_fields:
+                if field not in normalized:
+                    continue
+                value = normalized.get(field)
+                if value is None:
+                    continue
+                f_value = float(value)
+                if not math.isfinite(f_value):
+                    raise ValueError(
+                        "Non-finite float value encountered in currency historical data: "
+                        f"symbol={query.symbol}, field={field}, value={value}"
+                    )
+                normalized[field] = f_value
+
+            sanitized.append(YFinanceCurrencyHistoricalData.model_validate(normalized))
+
+        return sanitized
