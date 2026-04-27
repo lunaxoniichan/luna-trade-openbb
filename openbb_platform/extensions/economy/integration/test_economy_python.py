@@ -46,6 +46,14 @@ def obb(pytestconfig):  # pylint: disable=inconsistent-return-statements
                 "end_date": "2023-11-03",
             }
         ),
+        (
+            {
+                "provider": "fred",
+                "start_date": "2025-07-01",
+                "end_date": "2025-07-02",
+                "release_id": None,
+            }
+        ),
     ],
 )
 @pytest.mark.integration
@@ -62,40 +70,45 @@ def test_economy_calendar(params, obb):
 @pytest.mark.parametrize(
     "params",
     [
-        (
-            {
-                "country": "spain",
-                "transform": "yoy",
-                "frequency": "annual",
-                "harmonized": False,
-                "start_date": "2020-01-01",
-                "end_date": "2023-06-06",
-                "provider": "fred",
-            }
-        ),
-        (
-            {
-                "country": "portugal,spain",
-                "transform": "period",
-                "frequency": "monthly",
-                "harmonized": True,
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-                "provider": "fred",
-            }
-        ),
-        (
-            {
-                "country": "portugal,spain",
-                "transform": "yoy",
-                "frequency": "quarter",
-                "harmonized": False,
-                "start_date": "2020-01-01",
-                "end_date": "2023-06-06",
-                "provider": "oecd",
-                "expenditure": "transport",
-            }
-        ),
+        {
+            "country": "spain",
+            "transform": "yoy",
+            "frequency": "annual",
+            "harmonized": False,
+            "start_date": "2020-01-01",
+            "end_date": "2023-06-06",
+            "provider": "fred",
+        },
+        {
+            "country": "portugal,spain",
+            "transform": "period",
+            "frequency": "monthly",
+            "harmonized": True,
+            "start_date": "2023-01-01",
+            "end_date": "2023-06-06",
+            "provider": "fred",
+        },
+        {
+            "country": "portugal,spain",
+            "transform": "yoy",
+            "frequency": "quarter",
+            "harmonized": False,
+            "start_date": "2020-01-01",
+            "end_date": "2023-06-06",
+            "provider": "oecd",
+            "expenditure": "transport",
+        },
+        {
+            "country": "portugal,spain",
+            "transform": "yoy",
+            "frequency": "quarter",
+            "harmonized": False,
+            "start_date": "2020-01-01",
+            "end_date": "2023-06-06",
+            "provider": "imf",
+            "expenditure": "transport",
+            "limit": None,
+        },
     ],
 )
 @pytest.mark.integration
@@ -454,58 +467,6 @@ def test_economy_composite_leading_indicator(params, obb):
 @pytest.mark.parametrize(
     "params",
     [
-        ({"start_date": "2023-01-01", "end_date": "2023-06-06"}),
-        (
-            {
-                "country": "united_states",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_short_term_interest_rate(params, obb):
-    """Test economy short term interest rate."""
-    params = {p: v for p, v in params.items() if v}
-
-    result = obb.economy.short_term_interest_rate(**params)
-    assert result
-    assert isinstance(result, OBBject)
-    assert len(result.results) > 0
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        ({"start_date": "2023-01-01", "end_date": "2023-06-06"}),
-        (
-            {
-                "country": "united_states",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_long_term_interest_rate(params, obb):
-    """Test economy long term interest rate."""
-    params = {p: v for p, v in params.items() if v}
-
-    result = obb.economy.long_term_interest_rate(**params)
-    assert result
-    assert isinstance(result, OBBject)
-    assert len(result.results) > 0
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
         (
             {
                 "provider": "fred",
@@ -579,7 +540,15 @@ def test_economy_country_profile(params, obb):
     "params",
     [
         ({"provider": "econdb", "use_cache": False}),
-        ({"provider": "imf", "query": "balance sheet;households;debt"}),
+        (
+            {
+                "provider": "imf",
+                "query": "gold+volume",
+                "dataflows": None,
+                "keywords": None,
+                "symbol": None,
+            }
+        ),
     ],
 )
 @pytest.mark.integration
@@ -623,21 +592,15 @@ def test_economy_available_indicators(params, obb):
         (
             {
                 "provider": "imf",
-                "country": "us,uk,jp",
-                "symbol": "gold_reserves",
-                "start_date": "2022-01-01",
-                "end_date": "2023-12-31",
-                "frequency": "annual",
-            }
-        ),
-        (
-            {
-                "provider": "imf",
-                "country": "all",
-                "symbol": "derivative_assets",
-                "start_date": "2022-01-01",
-                "end_date": "2023-12-31",
-                "frequency": "annual",
+                "country": "*",
+                "symbol": "IL::RGV_REVS",
+                "start_date": "2025-09-30",
+                "end_date": None,
+                "frequency": "month",
+                "transform": None,
+                "dimension_values": None,
+                "limit": 1,
+                "pivot": False,
             }
         ),
     ],
@@ -737,31 +700,6 @@ def test_economy_house_price_index(params, obb):
     params = {p: v for p, v in params.items() if v}
 
     result = obb.economy.house_price_index(**params)
-    assert result
-    assert isinstance(result, OBBject)
-    assert len(result.results) > 0
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        (
-            {
-                "country": "united_states,united_kingdom",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2022-01-01",
-                "end_date": "2024-04-01",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_immediate_interest_rate(params, obb):
-    """Test economy immediate interest rate."""
-    params = {p: v for p, v in params.items() if v}
-
-    result = obb.economy.immediate_interest_rate(**params)
     assert result
     assert isinstance(result, OBBject)
     assert len(result.results) > 0
@@ -989,7 +927,7 @@ def test_economy_primary_dealer_positioning(params, obb):
 )
 @pytest.mark.integration
 def test_economy_survey_nonfarm_payrolls(params, obb):
-    """Test the economy survery nonfarm payrolls endpoint"""
+    """Test the economy survey nonfarm payrolls endpoint"""
     params = {p: v for p, v in params.items() if v}
 
     result = obb.economy.survey.nonfarm_payrolls(**params)
@@ -1157,38 +1095,6 @@ def test_economy_primary_dealer_fails(params, obb):
     [
         (
             {
-                "provider": "econdb",
-                "start_date": None,
-                "end_date": None,
-            }
-        ),
-        (
-            {
-                "provider": "imf",
-                "port_code": "port1201",
-                "start_date": "2020-01-01",
-                "end_date": "2020-01-31",
-                "country": None,
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_port_volume(params, obb):
-    """Test the economy port volume endpoint"""
-    params = {p: v for p, v in params.items() if v}
-
-    result = obb.economy.port_volume(**params)
-    assert result
-    assert isinstance(result, OBBject)
-    assert len(result.results) > 0
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        (
-            {
                 "provider": "imf",
                 "country": "us",
                 "counterpart": "world,eu",
@@ -1217,28 +1123,8 @@ def test_economy_direction_of_trade(params, obb):
         (
             {
                 "provider": "federal_reserve",
-                "year": None,
-                "document_type": None,
-                "pdf_only": False,
-                "as_choices": False,
-            }
-        ),
-        (
-            {
-                "provider": "federal_reserve",
-                "year": None,
-                "document_type": None,
-                "pdf_only": False,
-                "as_choices": False,
-            }
-        ),
-        (
-            {
-                "provider": "federal_reserve",
                 "year": 2022,
                 "document_type": "minutes",
-                "pdf_only": True,
-                "as_choices": True,
             }
         ),
     ],
@@ -1250,20 +1136,20 @@ def test_economy_fomc_documents(params, obb):
 
     result = obb.economy.fomc_documents(**params)
     assert result
-    assert isinstance(result, (list, dict))
-    assert len(result) > 0
+    assert isinstance(result, OBBject)
+    assert len(result.results) > 0
 
 
 @pytest.mark.parametrize(
     "params",
     [
-        (
-            {
-                "provider": "imf",
-                "country": "CRI",
-                "continent": None,
-            }
-        ),
+        {
+            "provider": "imf",
+            "port_code": None,
+            "country": None,
+            "continent": None,
+            "limit": None,
+        }
     ],
 )
 @pytest.mark.integration
@@ -1355,6 +1241,49 @@ def test_economy_fomc_documents_download(obb):
         "url": "https://www.federalreserve.gov/monetarypolicy/files/BeigeBook_20230118.pdf"
     }
     result = obb.economy.fomc_documents_download(**params)
+    assert result
+    assert isinstance(result, OBBject)
+    assert len(result.results) > 0
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "provider": "federal_reserve",
+            "frequency": "summary",
+            "start_date": None,
+            "end_date": None,
+        }
+    ],
+)
+@pytest.mark.integration
+def test_economy_total_factor_productivity(params, obb):
+    """Test economy total factor productivity."""
+    params = {p: v for p, v in params.items() if v}
+
+    result = obb.economy.total_factor_productivity(**params)
+    assert result
+    assert isinstance(result, OBBject)
+    assert len(result.results) > 0
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "provider": "federal_reserve",
+            "start_date": "2020-01-01",
+            "end_date": "2024-12-31",
+        }
+    ],
+)
+@pytest.mark.integration
+def test_economy_survey_inflation_expectations(params, obb):
+    """Test economy survey inflation expectations."""
+    params = {p: v for p, v in params.items() if v}
+
+    result = obb.economy.survey.inflation_expectations(**params)
     assert result
     assert isinstance(result, OBBject)
     assert len(result.results) > 0

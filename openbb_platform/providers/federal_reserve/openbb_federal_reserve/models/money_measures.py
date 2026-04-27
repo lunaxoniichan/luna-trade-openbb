@@ -3,7 +3,7 @@
 # pylint: disable=unused-argument
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.money_measures import (
@@ -12,8 +12,8 @@ from openbb_core.provider.standard_models.money_measures import (
 )
 
 titles = {
-    "M1": "M1",
-    "M2": "M2",
+    "M1": "m1",
+    "M2": "m2",
     "MCU": "currency",
     "MDD": "demand_deposits",
     "MMFGB": "retail_money_market_funds",
@@ -33,14 +33,14 @@ class FederalReserveMoneyMeasuresData(MoneyMeasuresData):
 class FederalReserveMoneyMeasuresFetcher(
     Fetcher[
         FederalReserveMoneyMeasuresQueryParams,
-        List[FederalReserveMoneyMeasuresData],
+        list[FederalReserveMoneyMeasuresData],
     ]
 ):
     """Transform the query, extract and transform the data from the FederalReserve endpoints."""
 
     @staticmethod
     def transform_query(
-        params: Dict[str, Any]
+        params: dict[str, Any],
     ) -> FederalReserveMoneyMeasuresQueryParams:
         """Transform the query params. Start and end dates are set to a 90 day interval."""
         # pylint: disable=import-outside-toplevel
@@ -60,9 +60,9 @@ class FederalReserveMoneyMeasuresFetcher(
     @staticmethod
     def extract_data(
         query: FederalReserveMoneyMeasuresQueryParams,
-        credentials: Optional[Dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Return the raw data from the FederalReserve endpoint."""
         # pylint: disable=import-outside-toplevel
         from io import BytesIO  # noqa
@@ -78,26 +78,26 @@ class FederalReserveMoneyMeasuresFetcher(
         df = read_csv(BytesIO(r.content), header=5, index_col=None, parse_dates=True)
 
         columns_to_get = ["Time Period"] + [
-            col + f'{"_N" if query.adjusted else ""}.M' for col in titles
+            col + f"{'_N' if query.adjusted else ''}.M" for col in titles
         ]
         df = df[columns_to_get]
         df.columns = ["month"] + list(titles.values())
         df = df.replace("ND", None)
         df["month"] = to_datetime(df["month"])
         df = df[
-            (to_datetime(df.month) >= to_datetime(query.start_date))
-            & (to_datetime(df.month) <= to_datetime(query.end_date))
+            (to_datetime(df.month) >= to_datetime(query.start_date))  # type: ignore
+            & (to_datetime(df.month) <= to_datetime(query.end_date))  # type: ignore
         ].set_index("month")
         # Needs the date to not be in the columns
-        df = df.applymap(lambda x: float(x) if x != "-" and x is not None else x)
+        df = df.map(lambda x: float(x) if x != "-" and x is not None else x)
         df = df.reset_index(drop=False)
 
         return df.to_dict(orient="records")
 
     @staticmethod
     def transform_data(
-        query: FederalReserveMoneyMeasuresQueryParams, data: List[Dict], **kwargs: Any
-    ) -> List[FederalReserveMoneyMeasuresData]:
+        query: FederalReserveMoneyMeasuresQueryParams, data: list[dict], **kwargs: Any
+    ) -> list[FederalReserveMoneyMeasuresData]:
         """Return the transformed data."""
         # pylint: disable=import-outside-toplevel
         from pandas import isna
@@ -109,4 +109,4 @@ class FederalReserveMoneyMeasuresFetcher(
                     d[k] = None
             fed_data.append(FederalReserveMoneyMeasuresData.model_validate(d))
 
-        return fed_data
+        return sorted(fed_data, key=lambda x: x.month)

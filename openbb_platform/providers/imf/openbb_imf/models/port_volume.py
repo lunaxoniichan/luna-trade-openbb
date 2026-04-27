@@ -3,9 +3,10 @@
 # pylint: disable=unused-argument
 
 from datetime import date as dateType
-from typing import Any, Optional
+from typing import Any
 
 from openbb_core.app.model.abstract.error import OpenBBError
+from openbb_core.app.service.system_service import SystemService
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.port_volume import (
     PortVolumeData,
@@ -22,6 +23,8 @@ from openbb_imf.utils.port_watch_helpers import (
 )
 from pydantic import ConfigDict, Field, field_validator, model_validator
 
+api_prefix = SystemService().system_settings.api_settings.prefix
+
 
 class ImfPortVolumeQueryParams(PortVolumeQueryParams):
     """IMF Port Volume Query Parameters.
@@ -37,7 +40,7 @@ class ImfPortVolumeQueryParams(PortVolumeQueryParams):
         "port_code": {
             "multiple_items_allowed": True,
             "x-widget_config": {
-                "options": get_port_id_choices(),
+                "optionsEndpoint": f"{api_prefix}/imf_utils/list_port_id_choices",
                 "style": {"popupWidth": 350},
             },
         },
@@ -57,13 +60,13 @@ class ImfPortVolumeQueryParams(PortVolumeQueryParams):
         },
     }
 
-    port_code: Optional[str] = Field(
+    port_code: str | None = Field(
         default=None,
         description="Port code to filter results by a specific port."
         + " This parameter is ignored if `country` parameter is provided."
         + " To get a list of available ports, use `obb.economy.shipping.port_info()`.",
     )
-    country: Optional[PortCountries] = Field(
+    country: PortCountries | None = Field(
         default=None,
         description="Country to focus on. Enter as a 3-letter ISO country code."
         + " This parameter is overridden by `port_code` if both are provided.",
@@ -145,9 +148,7 @@ class ImfPortVolumeQueryParams(PortVolumeQueryParams):
                 new_values.append(list(port_id_map.keys())[idx])
             else:
                 raise ValueError(
-                    f"Invalid port_code: {item}. "
-                    "Must be a valid port ID or name."
-                    f"Available options: {port_id_choices}."
+                    f"Invalid port_code: {item}. Must be a valid port ID or name.Available options: {port_id_choices}."
                 )
 
         if not new_values:
@@ -400,7 +401,7 @@ class ImfPortVolumeFetcher(Fetcher[ImfPortVolumeQueryParams, list[ImfPortVolumeD
     @staticmethod
     async def aextract_data(
         query: ImfPortVolumeQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list:
         """Extract data from the IMF Port Volume API."""

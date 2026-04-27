@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from inspect import Parameter
-from typing import Dict, List
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
@@ -16,6 +16,7 @@ from openbb_core.app.command_runner import (
 )
 from openbb_core.app.model.abstract.warning import OpenBBWarning
 from openbb_core.app.model.command_context import CommandContext
+from openbb_core.app.model.extension import CachedAccessor, Extension
 from openbb_core.app.model.obbject import OBBject
 from openbb_core.app.model.system_settings import SystemSettings
 from openbb_core.app.model.user_settings import UserSettings
@@ -50,7 +51,7 @@ class MockExecutionContext:
     @property
     def api_route(self) -> str:
         """Mock API route."""
-        return MockAPIRoute(self.route)
+        return MockAPIRoute(self.route)  # type: ignore
 
 
 @pytest.fixture()
@@ -67,7 +68,7 @@ def mock_func():
     """Set up mock function."""
 
     def mock_func(
-        a: int, b: int, c: float = 10.0, d: int = 5, provider_choices: Dict = {}
+        a: int, b: int, c: float = 10.0, d: int = 5, provider_choices: dict = {}
     ) -> None:
         """Mock function."""
 
@@ -246,12 +247,12 @@ def test_parameters_builder__warn_kwargs(extra_params, base, expect):
         model_config = ConfigDict(arbitrary_types_allowed=True)
         extra_params: SomeModel
 
-    with pytest.warns(expect) as warning_info:
-        # pylint: disable=protected-access
+    if expect is not None:
+        with pytest.warns(expect) as warning_info:
+            ParametersBuilder._warn_kwargs(extra_params, Model)
+        assert len(warning_info) > 0
+    else:
         ParametersBuilder._warn_kwargs(extra_params, Model)
-
-        if not expect:
-            assert len(warning_info) == 0
 
 
 def test_parameters_builder_build(mock_func, execution_context):
@@ -304,9 +305,9 @@ def test_command_runner_run(_):
     """Test run."""
     runner = CommandRunner()
 
-    with patch(
+    with patch(  # type: ignore
         "openbb_core.app.command_runner.StaticCommandRunner",
-        **{"return_value.run": True},
+        **{"return_value.run": True},  # type: ignore
     ):
         assert runner.run("mock/route")
 
@@ -319,7 +320,7 @@ async def test_static_command_runner_run(
 ):
     """Test static command runner run."""
 
-    def other_mock_func(a: int, b: int, c: int, d: int) -> List[int]:
+    def other_mock_func(a: int, b: int, c: int, d: int) -> list[int]:
         """Mock function."""
         return [a, b, c, d]
 
@@ -372,7 +373,7 @@ async def test_static_command_runner_execute_func(
     mock_command.return_value = OBBject(
         results=[1, 2, 3, 4],
         provider="mock_provider",
-        accessors={"charting": Mock()},
+        accessors={"charting": Mock()},  # type: ignore
     )
     mock_chart.return_value = None
 
@@ -397,13 +398,13 @@ def test_static_command_runner_chart():
             {"date": "1992", "value": 300},
         ],
         provider="mock_provider",
-        accessors={"charting": Mock()},
+        accessors={"charting": Mock()},  # type: ignore
     )
-    mock_obbject.charting.show = Mock()
+    mock_obbject.charting.show = Mock()  # type: ignore
 
     StaticCommandRunner._chart(mock_obbject)  # pylint: disable=protected-access
 
-    mock_obbject.charting.show.assert_called_once()
+    mock_obbject.charting.show.assert_called_once()  # type: ignore
 
 
 @pytest.mark.asyncio
@@ -416,7 +417,7 @@ async def test_static_command_runner_command():
         def __init__(self, results, **kwargs):
             self.results = results
             self.extra = {}
-            self.provider = kwargs.get("provider_choices").provider
+            self.provider = kwargs.get("provider_choices").provider  # type: ignore
 
     class MockProviderChoices:
         """Mock ProviderChoices"""
@@ -436,3 +437,128 @@ async def test_static_command_runner_command():
 
     assert result.results == [1, 2, 3, 4]
     assert result.provider == "mock_provider"
+
+
+def test_extension_immutable_preserves_original_and_does_not_set_extension_modified(
+    monkeypatch,
+):
+    """Immutable extensions must run against a copy and must not mutate the original OBBject."""
+    monkeypatch.setattr(
+        "openbb_core.app.service.system_service.SystemService",
+        lambda: SimpleNamespace(
+            system_settings=SimpleNamespace(
+                allow_on_command_output=True, allow_mutable_extensions=False
+            )
+        ),
+    )
+    ext = Extension(name="imm_ext_test", on_command_output=True, immutable=True)
+
+    def imm_accessor(self):
+        # Mutate the (copied) obbject if called
+        if isinstance(getattr(self, "results", None), list):
+            self.results.append("modified_by_imm")
+
+    # Attach accessor to OBBject class for binding on instances (monkeypatch will revert)
+    monkeypatch.setattr(OBBject, ext.name, imm_accessor, raising=False)
+
+    fake_loader = SimpleNamespace(on_command_output_callbacks={"*": [ext]})
+    monkeypatch.setattr(
+        "openbb_core.app.command_runner.ExtensionLoader", lambda: fake_loader
+    )
+
+    obb = OBBject(results=[1], provider="mock_provider")
+
+    StaticCommandRunner._trigger_command_output_callbacks("any/route", obb)
+
+    # original must remain unchanged
+    assert obb.results == [1]
+    # immutable extension should not mark the original as modified
+    assert getattr(obb, "_extension_modified", False) is False
+
+
+def test_extension_mutable_modifies_original_and_sets_extension_modified_and_route_scoping(
+    monkeypatch,
+):
+    """Mutable extensions must modify the original OBBject and set the modification flag;
+    registration must be route-scoped."""
+    monkeypatch.setattr(
+        "openbb_core.app.service.system_service.SystemService",
+        lambda: SimpleNamespace(
+            system_settings=SimpleNamespace(
+                allow_mutable_extensions=True, allow_on_command_output=True
+            )
+        ),
+    )
+    ext = Extension(name="mut_ext_test", on_command_output=True, immutable=False)
+
+    def mut_accessor(self):
+        if isinstance(getattr(self, "results", None), list):
+            self.results.append("modified_by_mut")
+
+    monkeypatch.setattr(
+        "openbb_core.app.model.obbject.OBBject.accessors",
+        OBBject.accessors | {ext.name},
+    )
+    monkeypatch.setattr(
+        OBBject, ext.name, CachedAccessor(ext.name, mut_accessor), raising=False
+    )
+
+    # register the extension only for "mock/route"
+    fake_loader = SimpleNamespace(on_command_output_callbacks={"mock/route": [ext]})
+    monkeypatch.setattr(
+        "openbb_core.app.command_runner.ExtensionLoader", lambda: fake_loader
+    )
+
+    obb = OBBject(results=[], provider="mock_provider")
+
+    # not executed for other routes
+    StaticCommandRunner._trigger_command_output_callbacks("other/route", obb)
+    assert obb.results == []
+
+    # executed for the registered route and should mutate original
+    StaticCommandRunner._trigger_command_output_callbacks("mock/route", obb)
+    assert obb.results == ["modified_by_mut"]
+    assert getattr(obb, "_extension_modified", False) is True
+
+
+def test_results_only_flag_sets_attribute_and_accessor_runs(monkeypatch):
+    """Extensions that declare results_only should toggle the _results_only attribute
+    and still run their accessor."""
+    monkeypatch.setattr(
+        "openbb_core.app.service.system_service.SystemService",
+        lambda: SimpleNamespace(
+            system_settings=SimpleNamespace(
+                allow_on_command_output=True, allow_mutable_extensions=False
+            )
+        ),
+    )
+    ext = Extension(
+        name="ro_ext_test", on_command_output=True, results_only=True, immutable=True
+    )
+
+    called = {"hit": False}
+
+    def ro_accessor(self):
+        called["hit"] = True
+
+    monkeypatch.setattr(
+        "openbb_core.app.model.obbject.OBBject.accessors",
+        OBBject.accessors | {ext.name},
+    )
+    monkeypatch.setattr(
+        OBBject, ext.name, CachedAccessor(ext.name, ro_accessor), raising=False
+    )
+
+    fake_loader = SimpleNamespace(on_command_output_callbacks={"*": [ext]})
+    monkeypatch.setattr(
+        "openbb_core.app.command_runner.ExtensionLoader", lambda: fake_loader
+    )
+
+    obb = OBBject(results=[1, 2, 3], provider="mock_provider")
+
+    StaticCommandRunner._trigger_command_output_callbacks("any/route", obb)
+
+    # results_only attribute must be set on the output OBBject
+    assert getattr(obb, "_results_only", False) is True
+    # accessor should have been called (even if on a copy for immutable extensions)
+    assert called["hit"] is True

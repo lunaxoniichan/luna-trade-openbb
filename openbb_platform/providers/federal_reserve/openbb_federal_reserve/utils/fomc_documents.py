@@ -1,7 +1,9 @@
 """FOMC document and release utilities."""
 
 from functools import lru_cache
-from typing import Literal, Optional
+from typing import Literal
+
+from openbb_core.provider.utils.lru import ttl_cache
 
 FomcDocumentType = Literal[
     "all",
@@ -27,19 +29,21 @@ def load_historical_fomc_documents() -> list:
     """Load historical FOMC documents map from the static assets."""
     # pylint: disable=import-outside-toplevel
     import json
+    from pathlib import Path
 
     historical_docs: list = []
-    historical_docs_path = __file__.replace(
-        "utils/fomc_documents.py", "assets/historical_releases.json"
+    historical_docs_path = (
+        Path(__file__).parent.parent / "assets" / "historical_releases.json"
     )
+
     with open(historical_docs_path, encoding="utf-8") as file:
         historical_docs = json.load(file)
 
     return historical_docs
 
 
-@lru_cache(maxsize=64)
-def get_current_fomc_documents(url: Optional[str] = None) -> list:
+@ttl_cache(maxsize=1, ttl=3600)
+def get_current_fomc_documents(url: str | None = None) -> list:
     """
     Get the current FOMC documents from https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm.
 
@@ -78,7 +82,7 @@ def get_current_fomc_documents(url: Optional[str] = None) -> list:
     soup = BeautifulSoup(response.content, "html.parser")
 
     for link in soup.find_all("a"):
-        url = link.get("href", "")
+        url = link.get("href", "")  # type: ignore[assignment]
 
         if "/newsevents/pressreleases" in url:
             continue
@@ -123,10 +127,10 @@ def get_current_fomc_documents(url: Optional[str] = None) -> list:
     return data_releases
 
 
-@lru_cache(maxsize=32)
+@ttl_cache(maxsize=32, ttl=3600)
 def get_fomc_documents_by_year(
-    year: Optional[int] = None,
-    document_type: Optional[FomcDocumentType] = None,
+    year: int | None = None,
+    document_type: FomcDocumentType | None = None,
     pdf_only: bool = False,
 ) -> list[dict]:
     """
@@ -214,7 +218,7 @@ def get_fomc_documents_by_year(
     return sorted(filtered_docs, key=lambda x: x["date"], reverse=True)
 
 
-def get_beige_books(year: Optional[int] = None) -> list[dict]:
+def get_beige_books(year: int | None = None) -> list[dict]:
     """
     Get a list of Beige Books by year.
 

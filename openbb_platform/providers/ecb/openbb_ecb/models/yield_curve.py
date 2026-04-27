@@ -3,7 +3,7 @@
 # pylint: disable=unused-argument
 
 from datetime import datetime
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -56,7 +56,7 @@ class ECBYieldCurveFetcher(
     @staticmethod
     async def aextract_data(
         query: ECBYieldCurveQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list[dict]:
         """Extract data."""
@@ -84,7 +84,7 @@ class ECBYieldCurveFetcher(
         async def get_one(maturity, use_cache):
             """Each maturity is a separate download."""
             url = f"{base_url}/{yield_curve[maturity]}"
-            response: Union[dict, list[dict]] = []
+            response: dict | list[dict] = []
 
             if use_cache is True:
                 cache_dir = f"{get_user_cache_directory()}/http/ecb_yield_curve"
@@ -94,7 +94,8 @@ class ECBYieldCurveFetcher(
                     await session.delete_expired_responses()
                     try:
                         response = await amake_request(
-                            url, session=session  # type: ignore
+                            url,
+                            session=session,  # type: ignore
                         )
                     finally:
                         await session.close()
@@ -133,7 +134,7 @@ class ECBYieldCurveFetcher(
         if not data:
             raise EmptyDataError("The request was returned empty.")
         dates = (
-            query.date.split(",")
+            str(query.date).split(",")
             if query.date
             else [datetime.now().strftime("%Y-%m-%d")]
         )
@@ -154,14 +155,14 @@ class ECBYieldCurveFetcher(
         flattened_data = flattened_data.rename(columns={"index": "date"}).sort_values(
             "date"
         )
-        flattened_data.loc[:, "maturity"] = Categorical(
+        flattened_data["maturity"] = Categorical(
             flattened_data.maturity, categories=MATURITIES, ordered=True
         )
         flattened_data = flattened_data.sort_values(
             by=["date", "maturity"]
         ).reset_index(drop=True)
-        flattened_data.date = flattened_data.date.dt.strftime("%Y-%m-%d")
-        flattened_data.rate = flattened_data.rate.astype(float).div(100)
+        flattened_data["date"] = flattened_data.date.dt.strftime("%Y-%m-%d")
+        flattened_data["rate"] = flattened_data.rate.astype(float).div(100)
         records = flattened_data.to_dict(orient="records")
 
         return [ECBYieldCurveData.model_validate(d) for d in records]

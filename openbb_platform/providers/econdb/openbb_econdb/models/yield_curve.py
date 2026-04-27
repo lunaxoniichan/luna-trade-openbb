@@ -3,7 +3,7 @@
 # pylint: disable=unused-argument
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.annotated_result import AnnotatedResult
@@ -61,7 +61,7 @@ class EconDbYieldCurveData(YieldCurveData):
 
 
 class EconDbYieldCurveFetcher(
-    Fetcher[EconDbYieldCurveQueryParams, List[EconDbYieldCurveData]]
+    Fetcher[EconDbYieldCurveQueryParams, list[EconDbYieldCurveData]]
 ):
     """EconDB Yield Curve Fetcher."""
 
@@ -77,7 +77,7 @@ class EconDbYieldCurveFetcher(
     @staticmethod
     async def aextract_data(  # pylint: disable=R0914.R0912,R0915
         query: EconDbYieldCurveQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> dict:
         """Extract the data."""
@@ -104,7 +104,7 @@ class EconDbYieldCurveFetcher(
                 + f"%5B{','.join(symbols)}%5D&page_size=50&format=json&token={token}"
             )
             data: list = []
-            response: Union[dict, list[dict]] = {}
+            response: dict | list[dict] = {}
             if query.use_cache is True:
                 cache_dir = (
                     f"{helpers.get_user_cache_directory()}/http/econdb_yield_curve"
@@ -125,9 +125,7 @@ class EconDbYieldCurveFetcher(
                     finally:
                         await session.close()
             else:
-                response = await helpers.amake_request(  # type: ignore
-                    url, timeout=20, **kwargs
-                )
+                response = await helpers.amake_request(url, timeout=20, **kwargs)  # type: ignore
             if not response:
                 messages.append(f"No data was returned for, {country}")
                 return
@@ -176,8 +174,8 @@ class EconDbYieldCurveFetcher(
             maturity_order = list(COUNTRIES_DICT[country].values())
             dates = query.date.split(",")  # type: ignore
             dates_list = DatetimeIndex(dates)
-            new_data: Dict = {}
-            metadata: Dict = {}
+            new_data: dict = {}
+            metadata: dict = {}
             # Unpack the data for each maturity.
             for item in country_data:
                 ticker = item.get("ticker")
@@ -233,11 +231,9 @@ class EconDbYieldCurveFetcher(
             flattened_data = flattened_data.sort_values(
                 by=["date", "maturity"]
             ).reset_index(drop=True)
-            flattened_data.loc[:, "date"] = flattened_data["date"].dt.strftime(
-                "%Y-%m-%d"
-            )
+            flattened_data["date"] = flattened_data["date"].dt.strftime("%Y-%m-%d")
             new_df = flattened_data.copy()
-            new_df.loc[:, "country"] = country
+            new_df["country"] = country
 
             def convert_duration(x):
                 """Convert the duration to a decimal representation of years."""
@@ -248,7 +244,7 @@ class EconDbYieldCurveFetcher(
                     return int(unit)
                 return int(unit) / 12
 
-            new_df.loc[:, "maturity_years"] = new_df.maturity.apply(convert_duration)
+            new_df["maturity_years"] = new_df.maturity.apply(convert_duration)
 
             new_df = new_df.replace({nan: None})
             records = [
@@ -264,7 +260,6 @@ class EconDbYieldCurveFetcher(
 
         if not results_data:
             raise EmptyDataError(
-                f"No data was found for the country, {query.country},"
-                f" and dates, {query.date}"
+                f"No data was found for the country, {query.country}, and dates, {query.date}"
             )
         return AnnotatedResult(result=results_data, metadata=results_metadata)

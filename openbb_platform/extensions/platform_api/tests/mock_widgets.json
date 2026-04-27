@@ -4,8 +4,11 @@
         "description": "Get Senior Loan Officers Opinion Survey.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_survey_sloos_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_survey_sloos"
+        },
         "params": [
             {
                 "label": "Start Date",
@@ -125,7 +128,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/survey/sloos",
+        "endpoint": "/api/v1/economy/survey/sloos",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -167,7 +170,8 @@
                         "headerTooltip": "Survey title.",
                         "cellDataType": "text"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -180,8 +184,11 @@
         "description": "Get University of Michigan Consumer Sentiment and Inflation Expectations Surveys.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_survey_university_of_michigan_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_survey_university_of_michigan"
+        },
         "params": [
             {
                 "label": "Start Date",
@@ -292,7 +299,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/survey/university_of_michigan",
+        "endpoint": "/api/v1/economy/survey/university_of_michigan",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -326,7 +333,8 @@
                         "cellDataType": "number",
                         "renderFn": "greenRed"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -339,8 +347,11 @@
         "description": "Get The Survey Of Economic Conditions For The Chicago Region.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_survey_economic_conditions_chicago_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_survey_economic_conditions_chicago"
+        },
         "params": [
             {
                 "label": "Start Date",
@@ -451,7 +462,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/survey/economic_conditions_chicago",
+        "endpoint": "/api/v1/economy/survey/economic_conditions_chicago",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -533,7 +544,8 @@
                         "headerTooltip": "Non-Labor Costs Index.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -546,8 +558,11 @@
         "description": "Get The Manufacturing Outlook Survey For The Texas Region.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_survey_manufacturing_outlook_texas_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_survey_manufacturing_outlook_texas"
+        },
         "params": [
             {
                 "label": "Start Date",
@@ -726,7 +741,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/survey/manufacturing_outlook_texas",
+        "endpoint": "/api/v1/economy/survey/manufacturing_outlook_texas",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -783,7 +798,8 @@
                         "cellDataType": "number",
                         "renderFn": "greenRed"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -796,8 +812,11 @@
         "description": "Get Nonfarm Payrolls Survey.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_survey_nonfarm_payrolls_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_survey_nonfarm_payrolls"
+        },
         "params": [
             {
                 "label": "Date",
@@ -898,7 +917,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/survey/nonfarm_payrolls",
+        "endpoint": "/api/v1/economy/survey/nonfarm_payrolls",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -935,7 +954,6 @@
                     },
                     {
                         "field": "name",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Name",
                         "headerTooltip": "The name of the series.",
@@ -972,7 +990,8 @@
                         "headerTooltip": "The indentation level of the element.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -985,8 +1004,11 @@
         "description": "Get Consumer Price Index (CPI).\n\nReturns either the rescaled index value, or a rate of change (inflation).",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_cpi_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_cpi"
+        },
         "params": [
             {
                 "label": "Country",
@@ -1275,7 +1297,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/cpi",
+        "endpoint": "/api/v1/economy/cpi",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -1308,7 +1330,8 @@
                         "headerTooltip": "CPI index value or period change.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -1321,8 +1344,11 @@
         "description": "Balance of Payments Reports.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_balance_of_payments_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_balance_of_payments"
+        },
         "params": [
             {
                 "label": "Country",
@@ -1551,7 +1577,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/balance_of_payments",
+        "endpoint": "/api/v1/economy/balance_of_payments",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -1714,7 +1740,8 @@
                         "headerTooltip": "Current Account Debits Total Secondary Income (USD)",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -1727,8 +1754,11 @@
         "description": "Search for FRED series or economic releases by ID or string.\n\nThis does not return the observation values, only the metadata.\nUse this function to find series IDs for `fred_series()`.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_fred_search_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_fred_search"
+        },
         "params": [
             {
                 "label": "Query",
@@ -1842,7 +1872,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/fred_search",
+        "endpoint": "/api/v1/economy/fred_search",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -1862,7 +1892,6 @@
                     },
                     {
                         "field": "series_id",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Series ID",
                         "headerTooltip": "The series ID for the item in the release.",
@@ -1870,7 +1899,6 @@
                     },
                     {
                         "field": "name",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Name",
                         "headerTooltip": "The name of the release.",
@@ -1995,7 +2023,8 @@
                         "headerTooltip": "The series group ID of the series. This value is used to query for regional data.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -2008,8 +2037,11 @@
         "description": "Get data by series ID from FRED.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_fred_series_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_fred_series"
+        },
         "params": [
             {
                 "label": "Symbol",
@@ -2191,7 +2223,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/fred_series",
+        "endpoint": "/api/v1/economy/fred_series",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -2210,7 +2242,8 @@
                         "headerTooltip": "The date of the data.",
                         "cellDataType": "date"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -2223,8 +2256,11 @@
         "description": "Get data by series ID from FRED.",
         "category": "Economy",
         "type": "chart",
-        "searchCategory": "chart",
         "widgetId": "economy_fred_series_fred_obb_chart",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_fred_series"
+        },
         "params": [
             {
                 "label": "Symbol",
@@ -2415,7 +2451,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/fred_series",
+        "endpoint": "/api/v1/economy/fred_series",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -2434,7 +2470,8 @@
                         "headerTooltip": "The date of the data.",
                         "cellDataType": "date"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -2448,8 +2485,11 @@
         "description": "Get economic release data by ID and/or element from FRED.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_fred_release_table_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_fred_release_table"
+        },
         "params": [
             {
                 "label": "Release ID",
@@ -2489,7 +2529,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/fred_release_table",
+        "endpoint": "/api/v1/economy/fred_release_table",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -2564,7 +2604,6 @@
                     },
                     {
                         "field": "name",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Name",
                         "headerTooltip": "The name of the series.",
@@ -2577,7 +2616,8 @@
                         "headerTooltip": "The reported value of the series.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -2590,8 +2630,11 @@
         "description": "Query the Geo Fred API for regional economic data by series group.\n\nThe series group ID is found by using `fred_search` and the `series_id` parameter.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_fred_regional_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_fred_regional"
+        },
         "params": [
             {
                 "label": "Symbol",
@@ -2852,7 +2895,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/fred_regional",
+        "endpoint": "/api/v1/economy/fred_regional",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -2889,18 +2932,18 @@
                         "field": "value",
                         "formatterFn": null,
                         "headerName": "Value",
-                        "headerTooltip": "The obersvation value. The units are defined in the search results by series ID.",
+                        "headerTooltip": "The observation value. The units are defined in the search results by series ID.",
                         "cellDataType": "number"
                     },
                     {
                         "field": "series_id",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Series ID",
                         "headerTooltip": "The individual series ID for the region.",
                         "cellDataType": "text"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -2913,8 +2956,11 @@
         "description": "Get retail prices for common items.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_retail_prices_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_retail_prices"
+        },
         "params": [
             {
                 "label": "Item",
@@ -3055,7 +3101,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/retail_prices",
+        "endpoint": "/api/v1/economy/retail_prices",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3104,7 +3150,8 @@
                         "headerTooltip": "Price, or change in price, per unit.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3117,8 +3164,11 @@
         "description": "Get Personal Consumption Expenditures (PCE) reports.",
         "category": "Economy",
         "type": "table",
-        "searchCategory": "Economy",
         "widgetId": "economy_pce_fred_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "economy_pce"
+        },
         "params": [
             {
                 "label": "Date",
@@ -3183,7 +3233,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/economy/pce",
+        "endpoint": "/api/v1/economy/pce",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3220,7 +3270,6 @@
                     },
                     {
                         "field": "name",
-                        "pinned": "left",
                         "formatterFn": null,
                         "headerName": "Name",
                         "headerTooltip": "The name of the series.",
@@ -3264,7 +3313,8 @@
                         "headerTooltip": "The line number of the series in the table.",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3277,8 +3327,11 @@
         "description": "Map a ticker symbol to a CIK number.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_cik_map_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_cik_map"
+        },
         "params": [
             {
                 "label": "Symbol",
@@ -3304,7 +3357,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/cik_map",
+        "endpoint": "/api/v1/regulators/sec/cik_map",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3323,7 +3376,8 @@
                         "cellDataType": "text",
                         "renderFn": null
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3336,8 +3390,11 @@
         "description": "Search SEC-regulated institutions by name and return a list of results with CIK numbers.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_institutions_search_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_institutions_search"
+        },
         "params": [
             {
                 "label": "Query",
@@ -3363,7 +3420,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/institutions_search",
+        "endpoint": "/api/v1/regulators/sec/institutions_search",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3388,7 +3445,8 @@
                         "headerTooltip": "Central Index Key (CIK)",
                         "cellDataType": "number"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3398,38 +3456,174 @@
     },
     "regulators_sec_schema_files_sec_obb": {
         "name": "Schema Files",
-        "description": "Use tool for navigating the directory of SEC XML schema files by year.",
+        "description": "Explore SEC and FASB XBRL taxonomy schemas, labels, and presentation structures.\n\n- No parameters: list all available taxonomy families.\n- taxonomy only: get all parsed structures for the most recent year.\n- taxonomy + year: get all parsed structures for a specific year.\n- taxonomy + component: get one component's structure using the most recent year.\n- taxonomy + year + component: get one component's parsed structure.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_schema_files_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_schema_files"
+        },
         "params": [
             {
-                "label": "Query",
-                "description": "Search query.",
-                "optional": true,
-                "type": "text",
-                "value": "",
-                "show": true,
-                "paramName": "query"
-            },
-            {
-                "label": "Use Cache",
-                "description": "Whether or not to use cache.",
-                "optional": true,
-                "type": "boolean",
-                "value": true,
-                "show": true,
-                "paramName": "use_cache"
-            },
-            {
-                "label": "URL",
-                "description": "Enter an optional URL path to fetch the next level.",
+                "label": "Taxonomy",
+                "description": "Taxonomy family to explore. Omit to list all available taxonomies and their descriptions.",
                 "optional": true,
                 "type": "text",
                 "value": null,
                 "show": true,
-                "paramName": "url"
+                "options": [
+                    {
+                        "label": "us-gaap",
+                        "value": "us-gaap"
+                    },
+                    {
+                        "label": "srt",
+                        "value": "srt"
+                    },
+                    {
+                        "label": "dei",
+                        "value": "dei"
+                    },
+                    {
+                        "label": "ecd",
+                        "value": "ecd"
+                    },
+                    {
+                        "label": "cyd",
+                        "value": "cyd"
+                    },
+                    {
+                        "label": "ffd",
+                        "value": "ffd"
+                    },
+                    {
+                        "label": "ifrs",
+                        "value": "ifrs"
+                    },
+                    {
+                        "label": "hmrc-dpl",
+                        "value": "hmrc-dpl"
+                    },
+                    {
+                        "label": "rxp",
+                        "value": "rxp"
+                    },
+                    {
+                        "label": "spac",
+                        "value": "spac"
+                    },
+                    {
+                        "label": "cef",
+                        "value": "cef"
+                    },
+                    {
+                        "label": "oef",
+                        "value": "oef"
+                    },
+                    {
+                        "label": "vip",
+                        "value": "vip"
+                    },
+                    {
+                        "label": "fnd",
+                        "value": "fnd"
+                    },
+                    {
+                        "label": "sro",
+                        "value": "sro"
+                    },
+                    {
+                        "label": "sbs",
+                        "value": "sbs"
+                    },
+                    {
+                        "label": "rocr",
+                        "value": "rocr"
+                    },
+                    {
+                        "label": "country",
+                        "value": "country"
+                    },
+                    {
+                        "label": "currency",
+                        "value": "currency"
+                    },
+                    {
+                        "label": "exch",
+                        "value": "exch"
+                    },
+                    {
+                        "label": "naics",
+                        "value": "naics"
+                    },
+                    {
+                        "label": "sic",
+                        "value": "sic"
+                    },
+                    {
+                        "label": "stpr",
+                        "value": "stpr"
+                    },
+                    {
+                        "label": "snj",
+                        "value": "snj"
+                    }
+                ],
+                "paramName": "taxonomy"
+            },
+            {
+                "label": "Year",
+                "description": "Taxonomy year (2009-2026 for us-gaap, varies by taxonomy). Defaults to the most recent year when omitted.",
+                "optional": true,
+                "type": "text",
+                "value": null,
+                "show": true,
+                "paramName": "year"
+            },
+            {
+                "label": "Component",
+                "description": "Presentation component to retrieve. Values are taxonomy-specific. Omit to return all components for the taxonomy.",
+                "optional": true,
+                "type": "text",
+                "value": null,
+                "show": true,
+                "paramName": "component"
+            },
+            {
+                "label": "Category",
+                "description": "Filter taxonomies by SEC filer category.",
+                "optional": true,
+                "type": "text",
+                "value": null,
+                "show": true,
+                "options": [
+                    {
+                        "label": "operating_company",
+                        "value": "operating_company"
+                    },
+                    {
+                        "label": "investment_company",
+                        "value": "investment_company"
+                    },
+                    {
+                        "label": "self_regulatory_org",
+                        "value": "self_regulatory_org"
+                    },
+                    {
+                        "label": "sbs_repository",
+                        "value": "sbs_repository"
+                    },
+                    {
+                        "label": "nrsro",
+                        "value": "nrsro"
+                    },
+                    {
+                        "label": "common_reference",
+                        "value": "common_reference"
+                    }
+                ],
+                "paramName": "category"
             },
             {
                 "paramName": "provider",
@@ -3437,7 +3631,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/schema_files",
+        "endpoint": "/api/v1/regulators/sec/schema_files",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3449,13 +3643,127 @@
                 "showAll": true,
                 "columnsDefs": [
                     {
-                        "field": "files",
+                        "field": "name",
                         "formatterFn": null,
-                        "headerName": "Files",
-                        "headerTooltip": "Dictionary of URLs to SEC Schema Files",
+                        "headerName": "Name",
+                        "headerTooltip": "Identifier: taxonomy key, year, component name, or XBRL element ID depending on the query mode.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "label",
+                        "formatterFn": null,
+                        "headerName": "Label",
+                        "headerTooltip": "Human-readable label.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "description",
+                        "formatterFn": null,
+                        "headerName": "Description",
+                        "headerTooltip": "Description or long name.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "category",
+                        "formatterFn": null,
+                        "headerName": "Category",
+                        "headerTooltip": "Taxonomy category (e.g., operating_company).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "style",
+                        "formatterFn": null,
+                        "headerName": "Style",
+                        "headerTooltip": "Taxonomy style (e.g., FASB_STANDARD, SEC_EMBEDDED).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "has_label_linkbase",
+                        "formatterFn": null,
+                        "headerName": "Has Label Linkbase",
+                        "headerTooltip": "Whether the taxonomy has a parseable label linkbase.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "url",
+                        "formatterFn": null,
+                        "headerName": "URL",
+                        "headerTooltip": "URL to the taxonomy resource or SEC reference page.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "level",
+                        "formatterFn": null,
+                        "headerName": "Level",
+                        "headerTooltip": "Hierarchy depth in presentation structure (0 = root).",
+                        "cellDataType": "number"
+                    },
+                    {
+                        "field": "order",
+                        "formatterFn": null,
+                        "headerName": "Order",
+                        "headerTooltip": "Sort order within parent in presentation structure.",
+                        "cellDataType": "number"
+                    },
+                    {
+                        "field": "parent_id",
+                        "formatterFn": "none",
+                        "headerName": "Parent ID",
+                        "headerTooltip": "Parent XBRL element ID in presentation structure.",
+                        "cellDataType": "text",
+                        "renderFn": null
+                    },
+                    {
+                        "field": "preferred_label",
+                        "formatterFn": null,
+                        "headerName": "Preferred Label",
+                        "headerTooltip": "Preferred label role URI for presentation rendering.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "xbrl_type",
+                        "formatterFn": null,
+                        "headerName": "Xbrl Type",
+                        "headerTooltip": "XBRL data type (e.g., monetaryItemType, textBlockItemType, stringItemType, sharesItemType, perShareItemType, domainItemType).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "period_type",
+                        "formatterFn": null,
+                        "headerName": "Period Type",
+                        "headerTooltip": "Period type: 'instant' (point-in-time) or 'duration' (over a period).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "balance_type",
+                        "formatterFn": null,
+                        "headerName": "Balance Type",
+                        "headerTooltip": "Balance type for monetary items: 'credit' or 'debit'.",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "abstract",
+                        "formatterFn": null,
+                        "headerName": "Abstract",
+                        "headerTooltip": "Whether the element is abstract (grouping/heading only, not taggable).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "substitution_group",
+                        "formatterFn": null,
+                        "headerName": "Substitution Group",
+                        "headerTooltip": "XBRL substitution group: 'item' (line item), 'dimensionItem' (axis), 'hypercubeItem' (table).",
+                        "cellDataType": "text"
+                    },
+                    {
+                        "field": "nillable",
+                        "formatterFn": null,
+                        "headerName": "Nillable",
+                        "headerTooltip": "Whether the element value can be nil.",
                         "cellDataType": "text"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3468,8 +3776,11 @@
         "description": "Map a CIK number to a ticker symbol, leading 0s can be omitted or included.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_symbol_map_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_symbol_map"
+        },
         "params": [
             {
                 "label": "Query",
@@ -3495,7 +3806,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/symbol_map",
+        "endpoint": "/api/v1/regulators/sec/symbol_map",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3515,7 +3826,8 @@
                         "cellDataType": "text",
                         "renderFn": null
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3528,8 +3840,11 @@
         "description": "Get the RSS feed that provides links to litigation releases concerning civil lawsuits brought by the Commission in federal court.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_rss_litigation_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_rss_litigation"
+        },
         "params": [
             {
                 "paramName": "provider",
@@ -3537,7 +3852,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/rss_litigation",
+        "endpoint": "/api/v1/regulators/sec/rss_litigation",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3584,7 +3899,8 @@
                         "headerTooltip": "URL to the release.",
                         "cellDataType": "text"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3597,8 +3913,11 @@
         "description": "Search for Industry Titles, Reporting Office, and SIC Codes. An empty query string returns all results.",
         "category": "Regulators",
         "type": "table",
-        "searchCategory": "Regulators",
         "widgetId": "regulators_sec_sic_search_sec_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "regulators_sec_sic_search"
+        },
         "params": [
             {
                 "label": "Query",
@@ -3624,7 +3943,7 @@
                 "show": false
             }
         ],
-        "endpoint": "api/v1/regulators/sec/sic_search",
+        "endpoint": "/api/v1/regulators/sec/sic_search",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3656,7 +3975,8 @@
                         "headerTooltip": "Reporting office within the Corporate Finance Office",
                         "cellDataType": "text"
                     }
-                ]
+                ],
+                "enableAdvanced": true
             }
         },
         "source": [
@@ -3664,13 +3984,16 @@
         ],
         "subCategory": "SEC"
     },
-    "form_submit_custom_obb": {
-        "name": "Form Submit",
+    "form_widget_custom_obb": {
+        "name": "Form Widget",
         "description": "",
-        "category": "Form Submit",
+        "category": "Form Widget",
         "type": "table",
-        "searchCategory": "Form Submit",
-        "widgetId": "form_submit_custom_obb",
+        "widgetId": "form_widget_custom_obb",
+        "mcp_tool": {
+            "mcp_server": "Open Data Platform",
+            "tool_id": "form_widget"
+        },
         "params": [
             {
                 "label": "Some Param",
@@ -3683,10 +4006,10 @@
             },
             {
                 "type": "form",
-                "paramName": "",
+                "paramName": "form",
                 "label": "Submit Form",
                 "description": "Submit a form via POST request.",
-                "endpoint": "form_submit",
+                "endpoint": "/form_submit",
                 "inputParams": [
                     {
                         "label": "Date",
@@ -3762,7 +4085,7 @@
                 ]
             }
         ],
-        "endpoint": "form_submit",
+        "endpoint": "/form_widget",
         "runButton": false,
         "gridData": {
             "w": 40,
@@ -3771,11 +4094,13 @@
         "data": {
             "dataKey": "",
             "table": {
-                "showAll": true
+                "showAll": true,
+                "enableAdvanced": true
             }
         },
         "source": [
             "Custom"
-        ]
+        ],
+        "form_endpoint": "/form_submit"
     }
 }

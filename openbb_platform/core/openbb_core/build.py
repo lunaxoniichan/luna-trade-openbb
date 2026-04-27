@@ -24,7 +24,7 @@ def main():
             [sys.executable, "-c", "import openbb"],
             capture_output=True,
             text=True,
-            check=True,
+            check=False,
         )
         logger.info(result.stdout)
         building_found = any(
@@ -32,55 +32,26 @@ def main():
         )
 
         if result.returncode != 0:
-            raise ModuleNotFoundError(result.stderr)
+            logger.error(result.stderr)
 
-    except (ModuleNotFoundError, subprocess.CalledProcessError):
+            if not result.stderr.endswith(
+                "ModuleNotFoundError: No module named 'openbb'\n"
+            ):
+                sys.exit(1)
+            raise subprocess.CalledProcessError(
+                returncode=result.returncode,
+                cmd=f"{sys.executable} -c import openbb",
+                output=result.stdout,
+                stderr=result.stderr,
+            )
+
+    except (ModuleNotFoundError, subprocess.CalledProcessError) as exc:
         logger.info(
-            "\nOpenBB build script not found, installing from PyPI...\n",
+            "The OpenBB build package"
+            "may have been uninstalled or corrupted. "
+            "Try `pip uninstall openbb` and reinstalling `openbb-core` in the environment.\n"
         )
-
-        try:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "pip",
-                    "install",
-                    "openbb",
-                    "--no-deps",
-                    "--force-reinstall",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            logger.info(result.stdout)
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                "Failed to install the OpenBB package. "
-                "Is pip installed and available in your environment? "
-                f"{e.output} \n\n {e.stderr}"
-            ) from None
-
-        try:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "-c",
-                    "import openbb",
-                ],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            logger.info(result.stdout)
-            building_found = any(
-                line.startswith("Building") for line in result.stdout.splitlines()
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"Failed to import the OpenBB package. \n{e.stderr}"
-            ) from e
+        raise exc from None
 
     if not building_found:
         logger.info("Did not build on import, triggering rebuild...\n")
@@ -88,39 +59,6 @@ def main():
             import openbb  # noqa
 
             openbb.build()
-
-        except AttributeError:
-            logger.info(
-                "The OpenBB package does not have a build method, "
-                "and may have been uninstalled or corrupted. "
-                "Installing with --force-reinstall.\n"
-            )
-            try:
-                result = subprocess.run(
-                    [
-                        sys.executable,
-                        "-m",
-                        "pip",
-                        "install",
-                        "openbb",
-                        "--no-deps",
-                        "--force-reinstall",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                logger.info(result.stdout)
-                result = subprocess.run(
-                    [sys.executable, "-c", "import openbb"],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                logger.info(result.stdout)
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"{e.output} -> {e.stderr}") from None
-
         except Exception as e:  # pylint: disable=broad-except
             raise RuntimeError(  # noqa
                 "Failed to build the OpenBB platform static assets. \n"

@@ -1,8 +1,8 @@
-"""Screener Helpers """
+"""Screener Helpers"""
 
 # pylint: disable=too-many-lines
 
-from typing import Dict, Literal
+from typing import Literal
 
 MARKET_CAP_MAP = {
     "all": "Any",
@@ -253,7 +253,7 @@ d_signals_desc = {
     "tl_support": "once a falling trendline is broken",
     "wedge_up": "upward trendline support and upward trendline resistance (reversal)",
     "wedge_down": "downward trendline support and downward trendline resistance (reversal)",
-    "wedge": "upward trendline support, downward trendline resistance (contiunation)",
+    "wedge": "upward trendline support, downward trendline resistance (continuation)",
     "triangle_ascending": "upward trendline support and horizontal trendline resistance",
     "triangle_descending": "horizontal trendline support and downward trendline resistance",
     "channel_up": "both support and resistance trendlines slope upward",
@@ -2061,7 +2061,7 @@ INDEX_MAP = {
 }
 
 
-def get_preset_choices(user_data_path) -> Dict:
+def get_preset_choices(user_data_path) -> dict:
     """Get a combined map of default and user screener presets."""
     # pylint: disable=import-outside-toplevel
     import shutil
@@ -2070,7 +2070,7 @@ def get_preset_choices(user_data_path) -> Dict:
 
     PRESETS_PATH = Path(user_data_path) / "presets" / "finviz"
     PRESETS_PATH_DEFAULT = Path(__file__).parent.resolve() / "presets"
-    preset_choices: Dict = {}
+    preset_choices: dict = {}
 
     if PRESETS_PATH_DEFAULT.exists():
         preset_choices.update(

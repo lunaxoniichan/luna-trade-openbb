@@ -2,16 +2,11 @@
 
 import argparse
 from pathlib import Path, PosixPath
+import inspect as _inspect
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
-    Optional,
-    Tuple,
-    Type,
     get_origin,
-    get_type_hints,
 )
 
 import pytest
@@ -40,7 +35,7 @@ def test_{test_name}(params, obb):
 """
 
 
-def find_extensions(filter_chart: Optional[bool] = True):
+def find_extensions(filter_chart: bool | None = True):
     """Find extensions."""
     filter_ext = ["tests", "__pycache__"]
     if filter_chart:
@@ -49,11 +44,12 @@ def find_extensions(filter_chart: Optional[bool] = True):
     extensions.extend(
         [x for x in (ROOT_DIR / "obbject_extensions").iterdir() if x.is_dir()]
     )
+    extensions.extend([x for x in (ROOT_DIR / "providers").iterdir() if x.is_dir()])
     extensions = [x for x in extensions if x.name not in filter_ext]
     return extensions
 
 
-def create_integration_test_files(extensions: List[PosixPath]) -> None:
+def create_integration_test_files(extensions: list[PosixPath]) -> None:
     """Create integration test files for the python interface."""
     for extension in extensions:
         extension_name = extension.name
@@ -83,9 +79,9 @@ def obb(pytestconfig):  # pylint: disable=inconsistent-return-statements
                 )
 
 
-def get_model_params(param_fields: Dict[str, FieldInfo]) -> Dict[str, Any]:
+def get_model_params(param_fields: dict[str, FieldInfo]) -> dict[str, Any]:
     """Get the test params for the fetcher based on the required standard params."""
-    test_params: Dict[str, Any] = {}
+    test_params: dict[str, Any] = {}
     for field_name, field in param_fields.items():
         if field.default and field.default is not PydanticUndefined:
             test_params[field_name] = field.default
@@ -101,13 +97,13 @@ def get_model_params(param_fields: Dict[str, FieldInfo]) -> Dict[str, Any]:
             }
             if field_name in example_dict:
                 test_params[field_name] = example_dict[field_name]
-            elif field.annotation == str:
+            elif field.annotation is str:
                 test_params[field_name] = "TEST_STRING"
-            elif field.annotation == int:
+            elif field.annotation is int:
                 test_params[field_name] = 1
-            elif field.annotation == float:
+            elif field.annotation is float:
                 test_params[field_name] = 1.0
-            elif field.annotation == bool:
+            elif field.annotation is bool:
                 test_params[field_name] = True
             elif get_origin(field.annotation) is Literal:
                 test_params[field_name] = field.annotation.__args__[0]  # type: ignore
@@ -116,10 +112,10 @@ def get_model_params(param_fields: Dict[str, FieldInfo]) -> Dict[str, Any]:
 
 
 def get_test_params(
-    model_name: str, provider_interface_map: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+    model_name: str, provider_interface_map: dict[str, Any]
+) -> list[dict[str, Any]]:
     """Get the test params for the integration test."""
-    test_params_list: List[Dict[str, Any]] = []
+    test_params_list: list[dict[str, Any]] = []
     standard_params = get_model_params(
         param_fields=provider_interface_map[model_name]["openbb"]["QueryParams"][
             "fields"
@@ -130,7 +126,7 @@ def get_test_params(
 
     for provider in provider_interface_map[model_name]:
         if provider != "openbb":
-            test_params: Dict[str, Any] = get_model_params(
+            test_params: dict[str, Any] = get_model_params(
                 param_fields=provider_interface_map[model_name][provider][
                     "QueryParams"
                 ]["fields"]
@@ -144,12 +140,22 @@ def get_test_params(
     return test_params_list
 
 
-def get_test_params_data_processing(hints: Dict[str, Type]):
+def get_test_params_data_processing(hints: dict[str, type]):
     """Get the test params for the data processing commands."""
     return list(hints.keys())
 
 
-def get_full_command_name_and_test_name(route: str) -> Tuple[str, str]:
+def get_params_from_signature(func) -> list[str]:
+    """Get parameter names from function signature.
+
+    Uses inspect.signature instead of get_type_hints for compatibility
+    with Python 3.14+ (PEP 649 lazy annotation evaluation).
+    """
+    sig = _inspect.signature(func)
+    return list(sig.parameters.keys())
+
+
+def get_full_command_name_and_test_name(route: str) -> tuple[str, str]:
     """Get the full command name and test name."""
     cmd_parts = route.split("/")
     del cmd_parts[0]
@@ -191,9 +197,9 @@ def write_to_file_w_template(test_file, params_list, full_command, test_name, ex
 
 def write_test(
     test_file: PosixPath,
-    commands_model: Dict[str, str],
+    commands_model: dict[str, str],
     extension_name: str,
-    provider_interface_map: Dict[str, Any],
+    provider_interface_map: dict[str, Any],
 ):
     """Write test."""
     for route, model in commands_model.items():
@@ -214,17 +220,16 @@ def write_test(
 
 
 def write_test_data_processing(
-    test_file: PosixPath, commands_map: Dict[str, str], extension_name: str
+    test_file: PosixPath, commands_map: dict[str, str], extension_name: str
 ):
     """Write test for data processing commands."""
     for route, _ in commands_map.items():
         if extension_name in route and route.startswith(f"/{extension_name}/"):
             test_name, full_command = get_full_command_name_and_test_name(route=route)
 
-            hints = get_type_hints(commands_map[route])
-            hints.pop("cc", None)
-            hints.pop("return", None)
-            test_params_list = [{k: "" for k in get_test_params_data_processing(hints)}]
+            param_names = get_params_from_signature(commands_map[route])
+            param_names = [k for k in param_names if k not in ("cc", "return")]
+            test_params_list = [{k: "" for k in param_names}]
 
             write_to_file_w_template(
                 test_file=test_file,
@@ -235,7 +240,7 @@ def write_test_data_processing(
 
 
 def add_test_commands_to_file(  # pylint: disable=W0102
-    extensions: List[PosixPath],
+    extensions: list[PosixPath],
 ) -> None:
     """Add test commands to file."""
     provider_interface = ProviderInterface()
@@ -284,7 +289,9 @@ def write_commands_integration_tests() -> None:
 )
 def write_charting_extension_integration_tests():
     """Write charting extension integration tests."""
-    import openbb_charting  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import openbb_charting
+    from openbb_charting import Charting
 
     functions = Charting.functions()
 

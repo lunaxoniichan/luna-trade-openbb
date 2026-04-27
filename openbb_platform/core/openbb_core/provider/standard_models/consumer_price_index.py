@@ -1,7 +1,7 @@
 """CPI Standard Model."""
 
 from datetime import date as dateType
-from typing import Literal, Optional
+from typing import Literal
 
 from openbb_core.provider.abstract.data import Data
 from openbb_core.provider.abstract.query_params import QueryParams
@@ -9,7 +9,7 @@ from openbb_core.provider.utils.descriptions import (
     DATA_DESCRIPTIONS,
     QUERY_DESCRIPTIONS,
 )
-from pydantic import Field, field_validator
+from pydantic import Field
 
 
 class ConsumerPriceIndexQueryParams(QueryParams):
@@ -19,32 +19,23 @@ class ConsumerPriceIndexQueryParams(QueryParams):
         description=QUERY_DESCRIPTIONS.get("country"),
         default="united_states",
     )
-    transform: Literal["index", "yoy", "period"] = Field(
-        description="Transformation of the CPI data. Period represents the change since previous."
-        + " Defaults to change from one year ago (yoy).",
+    transform: str = Field(
+        description="Transformation of the CPI data.",
         default="yoy",
-        json_schema_extra={"choices": ["index", "yoy", "period"]},
     )
     frequency: Literal["annual", "quarter", "monthly"] = Field(
         default="monthly",
         description=QUERY_DESCRIPTIONS.get("frequency"),
-        json_schema_extra={"choices": ["annual", "quarter", "monthly"]},
     )
     harmonized: bool = Field(
         default=False, description="If true, returns harmonized data."
     )
-    start_date: Optional[dateType] = Field(
+    start_date: dateType | None = Field(
         default=None, description=QUERY_DESCRIPTIONS.get("start_date")
     )
-    end_date: Optional[dateType] = Field(
+    end_date: dateType | None = Field(
         default=None, description=QUERY_DESCRIPTIONS.get("end_date")
     )
-
-    @field_validator("country", mode="before", check_fields=False)
-    @classmethod
-    def to_lower(cls, v):
-        """Convert country to lower case."""
-        return v.replace(" ", "_").lower()
 
 
 class ConsumerPriceIndexData(Data):

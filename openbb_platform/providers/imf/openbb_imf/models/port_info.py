@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 
-from typing import Any, Optional
+from typing import Any
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -38,20 +38,28 @@ class ImfPortInfoQueryParams(PortInfoQueryParams):
                 "style": {"popupWidth": 350},
             }
         },
+        "port_code": {
+            "x-widget_config": {
+                "description": "Dummy parameter for widget grouping.",
+            }
+        },
     }
 
-    continent: Optional[PortContinents] = Field(
+    continent: PortContinents | None = Field(
         default=None,
         description="Filter by continent. This parameter is ignored when a `country` is provided.",
     )
-
-    country: Optional[PortCountries] = Field(
+    country: PortCountries | None = Field(
         default=None,
         description="Country to focus on. Enter as a 3-letter ISO country code."
         + " This parameter supersedes `continent` if both are provided.",
     )
-
-    limit: Optional[int] = Field(
+    port_code: str | None = Field(
+        default=None,
+        exclude=True,
+        description="This is a dummy parameter to allow grouping in OpenBB Workspace widgets.",
+    )
+    limit: int | None = Field(
         default=None,
         description="Limit the number of results returned."
         + " Limit is determined by the annual average number of vessels transiting through the port."
@@ -72,7 +80,8 @@ class ImfPortInfoData(PortInfoData):
                 "$.gridData": {
                     "h": 25,
                     "w": 25,
-                }
+                },
+                "$.description": "General information and statistics about global ports.",
             }
         },
     )
@@ -91,6 +100,16 @@ class ImfPortInfoData(PortInfoData):
     port_code: str = Field(
         description="Unique ID assigned to the port.",
         title="Port ID",
+        json_schema_extra={
+            "x-widget_config": {
+                "description": "Unique ID assigned to the port. Click on a value to change the widget group value.",
+                "renderFn": "cellOnClick",
+                "renderFnParams": {
+                    "actionType": "groupBy",
+                    "groupByParamName": "port_code",
+                },
+            }
+        },
     )
     continent: str = Field(
         description="Continent where the port is located.",
@@ -152,19 +171,19 @@ class ImfPortInfoData(PortInfoData):
         + " Estimated using AIS data beginning 2019.",
         title="Ro-Ro Vessel Count",
     )
-    industry_top1: Optional[str] = Field(
+    industry_top1: str | None = Field(
         default=None,
         description="First dominant traded industries"
         + " based on the volume of goods estimated to flow through the port.",
         title="Top Industry 1",
     )
-    industry_top2: Optional[str] = Field(
+    industry_top2: str | None = Field(
         default=None,
         description="Second dominant traded industries"
         + " based on the volume of goods estimated to flow through the port.",
         title="Top Industry 2",
     )
-    industry_top3: Optional[str] = Field(
+    industry_top3: str | None = Field(
         default=None,
         description="Third dominant traded industries"
         + " based on the volume of goods estimated to flow through the port.",
@@ -204,7 +223,7 @@ class ImfPortInfoFetcher(Fetcher[ImfPortInfoQueryParams, list[ImfPortInfoData]])
     @staticmethod
     async def aextract_data(
         query: ImfPortInfoQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list:
         """Extract the raw data from the IMF Port Watch API."""

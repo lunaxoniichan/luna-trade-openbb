@@ -35,7 +35,7 @@ def vcr_config():
     }
 
 
-@pytest.mark.record_http
+@pytest.mark.record_ftp
 def test_nasdaq_equity_search_fetcher(credentials=test_credentials):
     """Test the Nasdaq Equity Search fetcher."""
     params = {"query": "", "is_etf": True, "use_cache": False}
@@ -45,7 +45,6 @@ def test_nasdaq_equity_search_fetcher(credentials=test_credentials):
     assert result is None
 
 
-@pytest.mark.skip("This function is currently not working at the source.")
 @pytest.mark.record_http
 def test_nasdaq_economic_calendar_fetcher(credentials=test_credentials):
     """Test the Nasdaq Economic Calendar fetcher."""

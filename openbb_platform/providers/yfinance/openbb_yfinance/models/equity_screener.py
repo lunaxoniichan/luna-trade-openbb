@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument, too-many-statements, too-many-branches
 
-from typing import Any, Optional
+from typing import Any
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -10,6 +10,7 @@ from openbb_core.provider.standard_models.equity_screener import (
     EquityScreenerData,
     EquityScreenerQueryParams,
 )
+from openbb_core.provider.utils.country_utils import Country
 from openbb_core.provider.utils.errors import EmptyDataError
 from openbb_yfinance.utils.references import (
     COUNTRIES,
@@ -23,7 +24,7 @@ from openbb_yfinance.utils.references import (
     YFPredefinedScreenerData,
     get_industry_sector,
 )
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class YFinanceEquityScreenerQueryParams(EquityScreenerQueryParams):
@@ -48,55 +49,77 @@ class YFinanceEquityScreenerQueryParams(EquityScreenerQueryParams):
         },
     }
 
-    country: Optional[str] = Field(
+    country: str | None = Field(
         default="us",
-        description="Filter by country, as a two-letter country code. Default is, 'us'. Use, 'all', for all countries.",
+        description="Filter by country. Accepts ISO 3166-1 alpha-2 codes (e.g., 'US', 'DE'), "
+        "alpha-3 codes (e.g., 'USA'), country names (e.g., 'United States'), or 'all' for all countries.",
     )
-    exchange: Optional[Exchanges] = Field(
+    exchange: Exchanges | None = Field(
         default=None,
         description="Filter by exchange.",
     )
-    sector: Optional[SECTORS] = Field(default=None, description="Filter by sector.")
-    industry: Optional[str] = Field(
+    sector: SECTORS | None = Field(default=None, description="Filter by sector.")
+    industry: str | None = Field(
         default=None,
         description="Filter by industry.",
     )
-    mktcap_min: Optional[int] = Field(
+    mktcap_min: int | None = Field(
         default=500000000,
         description="Filter by market cap greater than this value. Default is 500M.",
     )
-    mktcap_max: Optional[int] = Field(
+    mktcap_max: int | None = Field(
         default=None,
         description="Filter by market cap less than this value.",
     )
-    price_min: Optional[float] = Field(
+    price_min: float | None = Field(
         default=5,
         description="Filter by price greater than this value. Default is, 5",
     )
-    price_max: Optional[float] = Field(
+    price_max: float | None = Field(
         default=None,
         description="Filter by price less than this value.",
     )
-    volume_min: Optional[int] = Field(
+    volume_min: int | None = Field(
         default=10000,
         description="Filter by volume greater than this value. Default is, 10K",
     )
-    volume_max: Optional[int] = Field(
+    volume_max: int | None = Field(
         default=None,
         description="Filter by volume less than this value.",
     )
-    beta_min: Optional[float] = Field(
+    beta_min: float | None = Field(
         default=None,
         description="Filter by a beta greater than this value.",
     )
-    beta_max: Optional[float] = Field(
+    beta_max: float | None = Field(
         default=None,
         description="Filter by a beta less than this value.",
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=200,
         description="Limit the number of results returned. Default is, 200. Set to, 0, for all results.",
     )
+
+    @field_validator("country", mode="before")
+    @classmethod
+    def _validate_country(cls, v):
+        """Validate and normalize country input."""
+        if v is None or v == "all":
+            return v
+        # Convert Country type or string to lowercase alpha-2 for YFinance
+        if isinstance(v, Country):
+            country_code = v.alpha_2.lower()
+        else:
+            try:
+                country_code = Country(v).alpha_2.lower()
+            except ValueError:
+                country_code = v.strip().lower()
+        if country_code not in COUNTRIES:
+            raise ValueError(
+                f"Country '{v}' ({country_code.upper()}) is not supported by YFinance. "
+                f"Valid options: {', '.join(sorted(COUNTRIES))}",
+            )
+        return country_code
 
 
 class YFinanceEquityScreenerData(EquityScreenerData, YFPredefinedScreenerData):
@@ -104,7 +127,7 @@ class YFinanceEquityScreenerData(EquityScreenerData, YFPredefinedScreenerData):
 
 
 class YFinanceEquityScreenerFetcher(
-    Fetcher[YFinanceEquityScreenerQueryParams, list[YFinanceEquityScreenerData]]
+    Fetcher[YFinanceEquityScreenerQueryParams, list[YFinanceEquityScreenerData]],
 ):
     """YFinance Equity Screener Fetcher."""
 
@@ -121,8 +144,8 @@ class YFinanceEquityScreenerFetcher(
                 raise OpenBBError(
                     ValueError(
                         f"Industry {industry} does not belong to sector {sector}."
-                        " Valid choices are:" + "\n\n    " + f"{choices}"
-                    )
+                        " Valid choices are:" + "\n\n    " + f"{choices}",
+                    ),
                 )
         elif industry and not sector:
             choices = "\n".join(INDUSTRIES)
@@ -130,9 +153,9 @@ class YFinanceEquityScreenerFetcher(
             if not sector:
                 raise OpenBBError(
                     ValueError(
-                        f"Industry {industry} not found. Valid choices are:"
-                        "\n" + f"{choices}"
-                    )
+                        f"Industry {industry} not found. Valid choices are:\n"
+                        f"{choices}",
+                    ),
                 )
             _industry = INDUSTRY_MAP[sector][industry]
 
@@ -144,7 +167,7 @@ class YFinanceEquityScreenerFetcher(
     @staticmethod
     async def aextract_data(
         query: YFinanceEquityScreenerQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list[dict]:
         """Extract the raw data."""
@@ -155,7 +178,7 @@ class YFinanceEquityScreenerFetcher(
 
         if query.exchange is not None:
             operands.append(
-                {"operator": "eq", "operands": ["exchange", query.exchange.upper()]}
+                {"operator": "eq", "operands": ["exchange", query.exchange.upper()]},
             )
             query.country = "all"
 
@@ -175,39 +198,39 @@ class YFinanceEquityScreenerFetcher(
             industry = INDUSTRY_MAP[sector][query.industry]
             if industry in PEER_GROUPS:
                 operands.append(
-                    {"operator": "EQ", "operands": ["peer_group", industry]}
+                    {"operator": "EQ", "operands": ["peer_group", industry]},
                 )
             else:
                 operands.append({"operator": "EQ", "operands": ["industry", industry]})
 
         if query.mktcap_min is not None:
             operands.append(
-                {"operator": "gt", "operands": ["intradaymarketcap", query.mktcap_min]}
+                {"operator": "gt", "operands": ["intradaymarketcap", query.mktcap_min]},
             )
 
         if query.mktcap_max is not None:
             operands.append(
-                {"operator": "lt", "operands": ["intradaymarketcap", query.mktcap_max]}
+                {"operator": "lt", "operands": ["intradaymarketcap", query.mktcap_max]},
             )
 
         if query.price_min is not None:
             operands.append(
-                {"operator": "gt", "operands": ["intradayprice", query.price_min]}
+                {"operator": "gt", "operands": ["intradayprice", query.price_min]},
             )
 
         if query.price_max is not None:
             operands.append(
-                {"operator": "lt", "operands": ["intradayprice", query.price_max]}
+                {"operator": "lt", "operands": ["intradayprice", query.price_max]},
             )
 
         if query.volume_min is not None:
             operands.append(
-                {"operator": "gt", "operands": ["dayvolume", query.volume_min]}
+                {"operator": "gt", "operands": ["dayvolume", query.volume_min]},
             )
 
         if query.volume_max is not None:
             operands.append(
-                {"operator": "lt", "operands": ["dayvolume", query.volume_max]}
+                {"operator": "lt", "operands": ["dayvolume", query.volume_max]},
             )
 
         if query.beta_min is not None:

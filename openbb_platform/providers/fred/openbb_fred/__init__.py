@@ -11,6 +11,7 @@ from openbb_fred.models.dwpcr_rates import FREDDiscountWindowPrimaryCreditRateFe
 from openbb_fred.models.ecb_interest_rates import (
     FREDEuropeanCentralBankInterestRatesFetcher,
 )
+from openbb_fred.models.economic_calendar import FredEconomicCalendarFetcher
 from openbb_fred.models.euro_short_term_rate import FredEuroShortTermRateFetcher
 from openbb_fred.models.fed_projections import FREDPROJECTIONFetcher
 from openbb_fred.models.federal_funds_rate import FredFederalFundsRateFetcher
@@ -18,7 +19,6 @@ from openbb_fred.models.ffrmc import FREDSelectedTreasuryConstantMaturityFetcher
 from openbb_fred.models.high_quality_market import (
     FredHighQualityMarketCorporateBondFetcher,
 )
-from openbb_fred.models.ice_bofa import FREDICEBofAFetcher
 from openbb_fred.models.iorb_rates import FREDIORBFetcher
 from openbb_fred.models.manufacturing_outlook_ny import (
     FredManufacturingOutlookNYFetcher,
@@ -26,7 +26,6 @@ from openbb_fred.models.manufacturing_outlook_ny import (
 from openbb_fred.models.manufacturing_outlook_texas import (
     FredManufacturingOutlookTexasFetcher,
 )
-from openbb_fred.models.moody import FREDMoodyCorporateBondIndexFetcher
 from openbb_fred.models.mortgage_indices import FredMortgageIndicesFetcher
 from openbb_fred.models.non_farm_payrolls import FredNonFarmPayrollsFetcher
 from openbb_fred.models.overnight_bank_funding_rate import (
@@ -77,11 +76,10 @@ Research division of the Federal Reserve Bank of St. Louis that has more than
         "PROJECTIONS": FREDPROJECTIONFetcher,
         "IORB": FREDIORBFetcher,
         "DiscountWindowPrimaryCreditRate": FREDDiscountWindowPrimaryCreditRateFetcher,
+        "EconomicCalendar": FredEconomicCalendarFetcher,
         "EuropeanCentralBankInterestRates": FREDEuropeanCentralBankInterestRatesFetcher,
-        "ICEBofA": FREDICEBofAFetcher,
         "ManufacturingOutlookNY": FredManufacturingOutlookNYFetcher,
         "ManufacturingOutlookTexas": FredManufacturingOutlookTexasFetcher,
-        "MoodyCorporateBondIndex": FREDMoodyCorporateBondIndexFetcher,
         "MortgageIndices": FredMortgageIndicesFetcher,
         "NonFarmPayrolls": FredNonFarmPayrollsFetcher,
         "OvernightBankFundingRate": FredOvernightBankFundingRateFetcher,

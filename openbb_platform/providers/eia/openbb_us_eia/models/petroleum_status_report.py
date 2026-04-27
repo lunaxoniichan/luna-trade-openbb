@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 
-from typing import Any, Optional
+from typing import Any
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -44,7 +44,7 @@ class EiaPetroleumStatusReportQueryParams(PetroleumStatusReportQueryParams):
         default="balance_sheet",
         description="The group of data to be returned. The default is the balance sheet.",
     )
-    table: Optional[str] = Field(
+    table: str | None = Field(
         default=None,
         description="The specific table element within the category to be returned,"
         + " default is 'stocks', if the category is 'weekly_estimates', else 'all'."
@@ -113,7 +113,7 @@ class EiaPetroleumStatusReportFetcher(
     @staticmethod
     async def aextract_data(
         query: EiaPetroleumStatusReportQueryParams,
-        credentials: Optional[dict[str, Any]],
+        credentials: dict[str, Any] | None,
         **kwargs: Any,
     ) -> dict:
         """Extract the data from the EIA website."""
@@ -193,17 +193,17 @@ class EiaPetroleumStatusReportFetcher(
                 var_name="symbol",
             ).dropna()
             df = df.reset_index(drop=True)
-            df.loc[:, "title"] = df.symbol.map(title_map)
-            df.loc[:, "unit"] = df.title.map(lambda x: x.split(" (")[-1].split(")")[0])
+            df["title"] = df.symbol.map(title_map)
+            df["unit"] = df.title.map(lambda x: x.split(" (")[-1].split(")")[0])
             units = [f"({d})" for d in df.unit.unique().tolist()]
             for unit in units:
-                df.title = df.title.str.replace(unit, "", regex=False).str.strip()
-            df.loc[:, "table"] = table_name
+                df["title"] = df.title.str.replace(unit, "", regex=False).str.strip()
+            df["table"] = table_name
             df["order"] = df.groupby("date").cumcount() + 1
             df = df[["date", "table", "symbol", "order", "title", "value", "unit"]]
-            df.symbol = Categorical(df.symbol, categories=symbols, ordered=True)
+            df["symbol"] = Categorical(df.symbol, categories=symbols, ordered=True)
             df = df.sort_values(["date", "symbol"])
-            df.date = df.date.dt.date
+            df["date"] = df.date.dt.date
 
             if query.start_date:
                 df = df[df.date >= query.start_date]

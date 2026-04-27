@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.primary_dealer_positioning import (
@@ -65,6 +65,7 @@ class FederalReservePrimaryDealerPositioningData(PrimaryDealerPositioningData):
         json_schema_extra={
             "x-unit_measurement": "currency",
             "x-frontend_multiply": 1e6,
+            "x-widget_config": {"prefix": "$", "suffix": "M"},
         },
     )
     name: str = Field(
@@ -78,14 +79,14 @@ class FederalReservePrimaryDealerPositioningData(PrimaryDealerPositioningData):
 class FederalReservePrimaryDealerPositioningFetcher(
     Fetcher[
         FederalReservePrimaryDealerPositioningQueryParams,
-        List[FederalReservePrimaryDealerPositioningData],
+        list[FederalReservePrimaryDealerPositioningData],
     ]
 ):
     """Federal Reserve Primary Dealer Positioning Fetcher."""
 
     @staticmethod
     def transform_query(
-        params: Dict[str, Any]
+        params: dict[str, Any],
     ) -> FederalReservePrimaryDealerPositioningQueryParams:
         """Transform the query params."""
         return FederalReservePrimaryDealerPositioningQueryParams(**params)
@@ -93,9 +94,9 @@ class FederalReservePrimaryDealerPositioningFetcher(
     @staticmethod
     async def aextract_data(
         query: FederalReservePrimaryDealerPositioningQueryParams,
-        credentials: Optional[Dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Return the raw data from the FederalReserve endpoint."""
         # pylint: disable=import-outside-toplevel
         import asyncio  # noqa
@@ -105,7 +106,7 @@ class FederalReservePrimaryDealerPositioningFetcher(
         )
 
         symbols = POSITION_GROUPS_TO_SERIES.get(query.category, [])
-        results: List[Dict] = []
+        results: list[dict] = []
 
         base_url = "https://markets.newyorkfed.org/api/pd/get/"
         urls = [base_url + symbol + ".json" for symbol in symbols]
@@ -128,9 +129,9 @@ class FederalReservePrimaryDealerPositioningFetcher(
     @staticmethod
     def transform_data(
         query: FederalReservePrimaryDealerPositioningQueryParams,
-        data: List[Dict],
+        data: list[dict],
         **kwargs: Any,
-    ) -> List[FederalReservePrimaryDealerPositioningData]:
+    ) -> list[FederalReservePrimaryDealerPositioningData]:
         """Transform the data."""
         # pylint: disable=import-outside-toplevel
         from openbb_federal_reserve.utils.primary_dealer_statistics import (
@@ -145,8 +146,15 @@ class FederalReservePrimaryDealerPositioningFetcher(
             lambda x: POSITION_SERIES_TO_FIELD["dealer_position"].get(x)
         )
         df["title"] = df.symbol.map(lambda x: POSITION_SERIES_TO_TITLE.get(x))
+        df["date"] = df["date"].astype("datetime64[ns]").dt.date
+
+        if query.start_date:
+            df = df[df["date"] >= query.start_date]
+
+        if query.end_date:
+            df = df[df["date"] <= query.end_date]
 
         return [
             FederalReservePrimaryDealerPositioningData.model_validate(d)
-            for d in df.to_dict(orient="records")
+            for d in df.sort_values(by="date").to_dict(orient="records")
         ]

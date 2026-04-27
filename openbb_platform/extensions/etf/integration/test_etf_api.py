@@ -96,6 +96,7 @@ def test_etf_search(params, headers):
                 "start_date": "2023-01-01",
                 "end_date": "2023-06-06",
                 "interval": "1d",
+                "adjustment": "splits_only",
             }
         ),
         (
@@ -122,32 +123,6 @@ def test_etf_search(params, headers):
                 "start_date": "2023-01-01",
                 "end_date": "2023-06-06",
                 "interval": "1d",
-            }
-        ),
-        (
-            {
-                "sort": "desc",
-                "limit": "49999",
-                "adjustment": "unadjusted",
-                "provider": "polygon",
-                "symbol": "SPY",
-                "start_date": "2023-01-01",
-                "end_date": "2023-01-03",
-                "interval": "1m",
-                "extended_hours": False,
-            }
-        ),
-        (
-            {
-                "sort": "desc",
-                "limit": "49999",
-                "adjustment": "splits_only",
-                "provider": "polygon",
-                "symbol": "SPY",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-                "interval": "1d",
-                "extended_hours": False,
             }
         ),
         (
@@ -279,16 +254,25 @@ def test_etf_sectors(params, headers):
 @pytest.mark.parametrize(
     "params",
     [
-        ({"symbol": "QQQ", "cik": None, "provider": "fmp"}),
+        ({"symbol": "DIA", "year": 2025, "quarter": 1, "provider": "fmp"}),
+        (
+            {
+                "symbol": "DIA",
+                "year": 2025,
+                "quarter": 1,
+                "provider": "sec",
+                "use_cache": True,
+            }
+        ),
     ],
 )
 @pytest.mark.integration
-def test_etf_holdings_date(params, headers):
-    """Test the ETF holdings date endpoint."""
+def test_etf_nport_disclosure(params, headers):
+    """Test the ETF nport disclosure endpoint."""
     params = {p: v for p, v in params.items() if v}
 
     query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/etf/holdings_date?{query_str}"
+    url = f"http://0.0.0.0:8000/api/v1/etf/nport_disclosure?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200
@@ -300,33 +284,7 @@ def test_etf_holdings_date(params, headers):
         (
             {
                 "symbol": "IOO",
-                "date": "2023-03-31",
-                "cik": None,
                 "provider": "fmp",
-            }
-        ),
-        (
-            {
-                "symbol": "VOO",
-                "date": "2023-03-31",
-                "cik": None,
-                "provider": "fmp",
-            }
-        ),
-        (
-            {
-                "symbol": "TQQQ",
-                "date": None,
-                "provider": "sec",
-                "use_cache": False,
-            }
-        ),
-        (
-            {
-                "symbol": "QQQ",
-                "date": "2021-06-30",
-                "provider": "sec",
-                "use_cache": False,
             }
         ),
         (

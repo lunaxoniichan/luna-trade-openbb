@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Dict, Optional
 
 import dotenv
 from openbb_core.app.constants import OPENBB_DIRECTORY
@@ -12,7 +11,7 @@ from openbb_core.app.model.abstract.singleton import SingletonMeta
 class Env(metaclass=SingletonMeta):
     """Environment variables."""
 
-    _environ: Dict[str, str]
+    _environ: dict[str, str]
 
     def __init__(self) -> None:
         """Initialize the environment."""
@@ -25,17 +24,17 @@ class Env(metaclass=SingletonMeta):
         return self.str2bool(self._environ.get("OPENBB_API_AUTH", False))
 
     @property
-    def API_USERNAME(self) -> Optional[str]:
+    def API_USERNAME(self) -> str | None:
         """API username: sets API username."""
         return self._environ.get("OPENBB_API_USERNAME", None)
 
     @property
-    def API_PASSWORD(self) -> Optional[str]:
+    def API_PASSWORD(self) -> str | None:
         """API password: sets API password."""
         return self._environ.get("OPENBB_API_PASSWORD", None)
 
     @property
-    def API_AUTH_EXTENSION(self) -> Optional[str]:
+    def API_AUTH_EXTENSION(self) -> str | None:
         """Auth extension: specifies which authentication extension to use."""
         return self._environ.get("OPENBB_API_AUTH_EXTENSION", None)
 
@@ -55,9 +54,16 @@ class Env(metaclass=SingletonMeta):
         return self.str2bool(self._environ.get("OPENBB_DEV_MODE", False))
 
     @property
-    def HUB_BACKEND(self) -> str:
-        """Hub backend: sets the backend for the OpenBB Hub."""
-        return self._environ.get("OPENBB_HUB_BACKEND", "https://payments.openbb.co")
+    def ALLOW_MUTABLE_EXTENSIONS(self) -> bool:
+        """Allow mutable extensions: enables extensions that modify OBBject output."""
+        return self.str2bool(
+            self._environ.get("OPENBB_ALLOW_MUTABLE_EXTENSIONS", False)
+        )
+
+    @property
+    def ALLOW_ON_COMMAND_OUTPUT(self) -> bool:
+        """Allow on command output: enables extensions that act on command output."""
+        return self.str2bool(self._environ.get("OPENBB_ALLOW_ON_COMMAND_OUTPUT", False))
 
     @staticmethod
     def str2bool(value) -> bool:

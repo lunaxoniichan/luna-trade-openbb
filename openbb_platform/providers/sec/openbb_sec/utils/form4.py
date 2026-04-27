@@ -2,7 +2,6 @@
 
 import logging
 from datetime import date as dateType
-from typing import Optional
 
 from openbb_core.app.model.abstract.error import OpenBBError
 
@@ -144,6 +143,9 @@ def setup_database(conn):
 
 def add_missing_column(conn, column_name):
     """Add a missing column to the form4_data table."""
+    # Sanitize the column name to prevent SQL injection
+    column_name_clean = column_name.replace('"', '""')
+
     missing_type = (
         "MONEY"
         if "price" in column_name or "value" in column_name
@@ -158,7 +160,9 @@ def add_missing_column(conn, column_name):
         )
     )
     cursor = conn.cursor()
-    cursor.execute(f"ALTER TABLE form4_data ADD COLUMN {column_name} {missing_type}")
+    cursor.execute(
+        f'ALTER TABLE form4_data ADD COLUMN "{column_name_clean}" {missing_type}'
+    )
     conn.commit()
 
 
@@ -200,8 +204,8 @@ def close_db(conn, db_path):
 
 async def get_form_4_urls(
     symbol,
-    start_date: Optional[dateType] = None,
-    end_date: Optional[dateType] = None,
+    start_date: dateType | None = None,
+    end_date: dateType | None = None,
     use_cache: bool = True,
 ):
     """Get the form 4 URLs for a symbol."""
@@ -222,37 +226,29 @@ async def get_form_4_urls(
     start_date = (
         start_date
         if isinstance(start_date, dateType)
-        else (
-            dateType.fromisoformat(start_date)  # type: ignore
-            if start_date and isinstance(start_date, str)
-            else None
-        )
+        else (dateType.fromisoformat(start_date) if start_date and isinstance(start_date, str) else None)  # type: ignore
     )
     end_date = (
         end_date
         if isinstance(end_date, dateType)
-        else (
-            dateType.fromisoformat(end_date)  # type: ignore
-            if end_date and isinstance(end_date, str)
-            else None
-        )
+        else (dateType.fromisoformat(end_date) if end_date and isinstance(end_date, str) else None)  # type: ignore
     )
     urls: list = []
     for item in form_4:
         if (
-            (not start_date or not item.filing_date)
+            (not start_date or not item.filing_date)  # type: ignore
             or start_date
-            and item.filing_date < start_date
+            and item.filing_date < start_date  # type: ignore
         ):
             continue
         if (
-            (not end_date or not item.report_date)
+            (not end_date or not item.report_date)  # type: ignore
             or end_date
-            and item.report_date > end_date
+            and item.report_date > end_date  # type: ignore
         ):
             continue
-        to_replace = f"{item.primary_doc.split('/')[0]}/"
-        form_url = item.report_url.replace(to_replace, "")
+        to_replace = f"{item.primary_doc.split('/')[0]}/"  # type: ignore
+        form_url = item.report_url.replace(to_replace, "")  # type: ignore
         if form_url.endswith(".xml"):
             urls.append(form_url)
 
@@ -287,7 +283,7 @@ async def get_form_4_data(url) -> dict:
         response_callback=response_callback,
         timeout=30,
     )  # type: ignore
-    response_text = response.decode("utf-8")
+    response_text = response.decode("utf-8")  # type: ignore
 
     if "Traffic Limit" in response_text:
         raise OpenBBError(
@@ -305,7 +301,7 @@ async def get_form_4_data(url) -> dict:
 
     return (
         xml_data.get("ownershipDocument") if xml_data.get("ownershipDocument") else {}
-    )
+    )  # type: ignore
 
 
 async def parse_form_4_data(  # noqa: PLR0915, PLR0912  # pylint: disable=too-many-branches
@@ -355,10 +351,10 @@ async def parse_form_4_data(  # noqa: PLR0915, PLR0912  # pylint: disable=too-ma
         "symbol": issuer.get("issuerTradingSymbol", "").upper(),
         "form": data.get("documentType"),
         "owner": (
-            owners if owners else owner.get("reportingOwnerId", {}).get("rptOwnerName")
+            owners if owners else owner.get("reportingOwnerId", {}).get("rptOwnerName")  # type: ignore
         ),
         "owner_cik": (
-            ciks if ciks else owner.get("reportingOwnerId", {}).get("rptOwnerCik")
+            ciks if ciks else owner.get("reportingOwnerId", {}).get("rptOwnerCik")  # type: ignore
         ),
         "issuer": issuer.get("issuerName"),
         "issuer_cik": issuer.get("issuerCik"),
@@ -428,7 +424,7 @@ async def parse_form_4_data(  # noqa: PLR0915, PLR0912  # pylint: disable=too-ma
                                         else (
                                             "; ".join(
                                                 [
-                                                    footnotes.get(footnote_id)
+                                                    footnotes.get(footnote_id, "")
                                                     for footnote_id in ids
                                                 ]
                                             )
@@ -561,7 +557,7 @@ async def download_data(urls, use_cache: bool = True):  # noqa: PLR0915
 
             if result:
                 df = DataFrame(result)
-                df.loc[:, "filing_url"] = url
+                df["filing_url"] = url
                 df = df.replace({nan: None}).rename(columns=field_map)
                 try:
                     if use_cache is True:
@@ -580,8 +576,7 @@ async def download_data(urls, use_cache: bool = True):  # noqa: PLR0915
 
         time_estimate = (len(non_cached_urls) / 7) * 1.8
         logger.info(
-            "Found %d total filings and %d"
-            " uncached entries to download, estimated download time: %d seconds.",
+            "Found %d total filings and %d uncached entries to download, estimated download time: %d seconds.",
             len(urls),
             len(non_cached_urls),
             round(time_estimate),
@@ -632,9 +627,9 @@ def get_cached_data(urls, conn):
 
 async def get_form_4(
     symbol,
-    start_date: Optional[dateType] = None,
-    end_date: Optional[dateType] = None,
-    limit: Optional[int] = None,
+    start_date: dateType | None = None,
+    end_date: dateType | None = None,
+    limit: int | None = None,
     use_cache: bool = True,
 ) -> list[dict]:
     """Get the Form 4 data by ticker symbol or CIK number."""

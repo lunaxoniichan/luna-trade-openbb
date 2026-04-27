@@ -1,16 +1,18 @@
 """API Utils."""
 
 import json
+import logging
 import os
 import socket
 import sys
 from pathlib import Path
-from typing import Optional
 
 from deepdiff import DeepDiff
+from fastapi import FastAPI
 
-from .widgets import build_json
-
+logger = logging.getLogger("openbb_platform_api")
+PATH_WIDGETS: dict = {}
+FIRST_RUN: bool = True
 LAUNCH_SCRIPT_DESCRIPTION = """
 Serve the OpenBB Platform API.
 
@@ -23,7 +25,6 @@ Launcher specific arguments:
     --editable                      Flag to make widgets.json an editable file that can be modified during runtime. Default is 'false'.
     --build                         If the file already exists, changes prompt action to overwrite/append/ignore. Only valid when --editable true.
     --no-build                      Do not build the widgets.json file. Use this flag to load an existing widgets.json file without checking for updates.
-    --login                         Login to the OpenBB Platform.
     --exclude                       JSON encoded list of API paths to exclude from widgets.json. Disable entire routes with '*' - e.g. '["/api/v1/*"]'.
     --no-filter                     Do not filter out widgets in widget_settings.json file.
     --widgets-json                  Absolute/relative path to use as the widgets.json file. Default is ~/envs/{env}/assets/widgets.json, when --editable is 'true'.
@@ -92,115 +93,18 @@ def check_port(host, port):
     return port
 
 
-def get_user_settings(
-    _login: bool, current_user_settings: str, user_settings_copy: str
-):
+def get_user_settings(current_user_settings: str) -> dict:
     """Login to the OpenBB Platform."""
-    # pylint: disable=import-outside-toplevel
-    import getpass
-
     if Path(current_user_settings).exists():
         with open(current_user_settings, encoding="utf-8") as f:
-            _current_settings = json.load(f)
+            user_settings = json.load(f)
     else:
-        _current_settings = {
+        user_settings = {
             "credentials": {},
             "preferences": {},
             "defaults": {"commands": {}},
         }
-    if (isinstance(_login, str) and _login.lower() == "false") or not _login:
-        return _current_settings
-
-    pat = getpass.getpass(
-        "\n\nEnter your personal access token (PAT) to authorize the API and update your local settings."
-        + "\nSkip to use a pre-configured 'user_settings.json' file."
-        + "\nPress Enter to skip or copy (entered values are not displayed on screen) your PAT to the command line: "
-    )
-
-    if pat:
-        from openbb_core.app.service.hub_service import HubService
-
-        hub_credentials: dict = {}
-        hub_preferences: dict = {}
-        hub_defaults: dict = {}
-        try:
-            Hub = HubService()
-            _ = Hub.connect(pat=pat)
-            hub_settings = Hub.pull()
-            hub_credentials = json.loads(
-                hub_settings.credentials.model_dump_json()  # pylint: disable=no-member
-            )
-            hub_preferences = json.loads(
-                hub_settings.preferences.model_dump_json()  # pylint: disable=no-member
-            )
-            hub_defaults = json.loads(
-                hub_settings.defaults.model_dump_json()  # pylint: disable=no-member
-            )
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            print(  # noqa: T201
-                f"\n\nError connecting with Hub:\n{e}\n\nUsing the local settings.\n"
-            )
-
-        if hub_credentials:
-            # Prompt the user to ask if they want to persist the new settings
-            persist_input = (
-                input(
-                    "\n\nDo you want to persist the new settings?"
-                    + " Not recommended for public machines. (yes/no): "
-                )
-                .strip()
-                .lower()
-            )
-
-            if persist_input in ["yes", "y"]:
-                PERSIST = True
-            elif persist_input in ["no", "n"]:
-                PERSIST = False
-            else:
-                print(  # noqa: T201
-                    "\n\nInvalid input. Defaulting to not persisting the new settings."
-                )
-                PERSIST = False
-
-            # Save the current settings to restore at the end of the session.
-            if PERSIST is False:
-                with open(user_settings_copy, "w", encoding="utf-8") as f:
-                    json.dump(_current_settings, f, indent=4)
-
-        new_settings = _current_settings.copy()
-        new_settings.setdefault("credentials", {})
-        new_settings.setdefault("preferences", {})
-        new_settings.setdefault("defaults", {"commands": {}})
-
-        # Update the current settings with the new settings
-        if hub_credentials:
-            for k, v in hub_credentials.items():
-                if v:
-                    new_settings["credentials"][k] = v.strip('"').strip("'")
-
-        if hub_preferences:
-            for k, v in hub_preferences.items():
-                if v:
-                    new_settings["preferences"][k] = v
-
-        if hub_defaults:
-            for k, v in hub_defaults.items():
-                if k == "commands":
-                    for key, value in hub_defaults["commands"].items():
-                        if value:
-                            new_settings["defaults"]["commands"][key] = value
-                elif v:
-                    new_settings["defaults"][k] = v
-                else:
-                    continue
-
-        # Write the new settings to the user_settings.json file
-        with open(current_user_settings, "w", encoding="utf-8") as f:
-            json.dump(new_settings, f, indent=4)
-
-        _current_settings = new_settings
-
-    return _current_settings
+    return user_settings
 
 
 def get_widgets_json(
@@ -208,9 +112,33 @@ def get_widgets_json(
     _openapi,
     widget_exclude_filter: list,
     editable: bool = False,
-    widgets_path: Optional[str] = None,
+    widgets_path: str | None = None,
+    app: FastAPI | None = None,
 ):
     """Generate and serve the widgets.json for the OpenBB Platform API."""
+    # pylint: disable=import-outside-toplevel
+    from openbb_core.provider.utils.helpers import run_async  # noqa
+    from .merge_widgets import get_and_fix_widget_paths, has_additional_widgets
+    from .widgets import build_json
+
+    global PATH_WIDGETS  # noqa  pylint: disable=W0603
+
+    if (
+        FIRST_RUN is True
+        and app
+        and isinstance(app, FastAPI)
+        and has_additional_widgets(app)
+    ):
+        PATH_WIDGETS = run_async(get_and_fix_widget_paths, app)
+
+    if PATH_WIDGETS and (
+        to_exclude := [p + "*" for p in PATH_WIDGETS if p.endswith("/")]
+    ):
+        # Exclude explicit router paths from the automated generation.
+        # These widgets have been added by a router, so we assume they don't want
+        # the factory for those paths.
+        widget_exclude_filter.extend(to_exclude)
+
     if editable is True:
         if widgets_path is None:
             python_path = Path(sys.executable)
@@ -259,7 +187,7 @@ def get_widgets_json(
                     with open(widgets_json_path, "w", encoding="utf-8") as f:
                         json.dump(_widgets_json, f, ensure_ascii=False, indent=4)
                 except Exception as e:  # pylint: disable=broad-exception-caught
-                    print(  # noqa: T201
+                    print(  # noqa
                         f"Error writing widgets.json: {e}.  Loading from memory instead."
                     )
                     _widgets_json = (
@@ -270,17 +198,36 @@ def get_widgets_json(
     else:
         _widgets_json = build_json(_openapi, widget_exclude_filter)
 
+        if PATH_WIDGETS:
+            for k in PATH_WIDGETS:
+                if k in widget_exclude_filter or k + "*" in widget_exclude_filter:
+                    continue
+
+                for widget_id, widget in PATH_WIDGETS[k].items():
+                    if widget_id not in widget_exclude_filter:
+                        _widgets_json[widget_id] = widget
+
     return _widgets_json
 
 
 def import_app(app_path: str, name: str = "app", factory: bool = False):
     """Import the FastAPI app instance from a local file or module."""
     # pylint: disable=import-outside-toplevel
-    from fastapi import FastAPI  # noqa
-    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.middleware.cors import CORSMiddleware  # noqa
     from importlib import import_module, util
     from openbb_core.api.app_loader import AppLoader
     from openbb_core.api.rest_api import system
+
+    def _is_module_colon_notation(app_path: str) -> bool:
+        """Check if the path uses module:name notation vs a Windows path."""
+        if ":" not in app_path:
+            return False
+        # Windows absolute path check (e.g., C:\path or D:/path)
+        if len(app_path) >= 2 and app_path[1] == ":" and app_path[0].isalpha():
+            # Could still have colon notation: C:\path\file.py:app
+            parts = app_path.split(":")
+            return len(parts) > 2  # More than just drive letter colon
+        return True
 
     def _load_module_from_file_path(file_path: str):
         spec_name = os.path.basename(file_path).split(".")[0]
@@ -294,16 +241,15 @@ def import_app(app_path: str, name: str = "app", factory: bool = False):
         spec.loader.exec_module(module)  # type: ignore
         return module
 
-    # Case 1: Module path with colon notation (e.g., "my_app.main:app" or "main:app")
-    if ":" in app_path:
-        module_path, name = app_path.split(":")
+    if _is_module_colon_notation(app_path):
+        module_path, name = app_path.rsplit(":", 1)
         try:  # First try to import as a module
             module = import_module(module_path)
         except ImportError:  # If module import fails, try to load as a local file
             if not module_path.endswith(".py"):
                 module_path += ".py"
 
-            if not str(module_path).startswith("/"):
+            if not Path(module_path).is_absolute():
                 cwd = Path.cwd()
                 file_path = str(cwd.joinpath(module_path).resolve())
             else:
@@ -318,7 +264,7 @@ def import_app(app_path: str, name: str = "app", factory: bool = False):
 
     # Case 2: File path (e.g., "main.py" or "my_app/main.py")
     else:
-        if not str(app_path).startswith("/"):
+        if not Path(app_path).is_absolute():
             cwd = Path.cwd()
             app_path = str(cwd.joinpath(app_path).resolve())
 

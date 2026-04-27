@@ -1,15 +1,15 @@
 """Test the package_builder.py file."""
 
-# pylint: disable=redefined-outer-name, protected-access
-
+# pylint: disable=redefined-outer-name,protected-access,unused-argument
 from dataclasses import dataclass
 from inspect import _empty
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Annotated, Any
 from unittest.mock import PropertyMock, mock_open, patch
 
 import pandas
 import pytest
+from fastapi import Depends, Request
 from importlib_metadata import EntryPoint, EntryPoints
 from openbb_core.app.static.package_builder import (
     ClassDefinition,
@@ -22,8 +22,7 @@ from openbb_core.app.static.package_builder import (
     PathHandler,
 )
 from openbb_core.env import Env
-from pydantic import Field
-from typing_extensions import Annotated
+from pydantic import BaseModel, Field
 
 
 @pytest.fixture(scope="module")
@@ -43,9 +42,13 @@ def test_package_builder_init(package_builder):
     assert package_builder
 
 
-def test_package_builder_build(package_builder):
+def test_package_builder_build(tmp_openbb_dir):
     """Test package builder build."""
-    package_builder.build()
+    builder = PackageBuilder(tmp_openbb_dir)
+
+    # Mock the _save_reference_file method to avoid sys.modules iteration
+    with patch.object(builder, "_save_reference_file"):
+        builder.build()
 
 
 def test_save_modules(package_builder):
@@ -273,13 +276,11 @@ def test_build_func_params(method_definition):
         "param3": Parameter(
             "param3",
             kind=Parameter.POSITIONAL_OR_KEYWORD,
-            annotation=pandas.core.frame.DataFrame,
+            annotation=dict[str, Any] | pandas.DataFrame,
         ),
     }
 
-    expected_output = (
-        "param1: None,\n        param2: int,\n        param3: pandas.DataFrame"
-    )
+    expected_output = "param1: None,\n        param2: int,\n        param3: dict[str, Any] | pandas.DataFrame"
     output = method_definition.build_func_params(param_map)
 
     assert output == expected_output
@@ -288,7 +289,7 @@ def test_build_func_params(method_definition):
 @pytest.mark.parametrize(
     "return_type, expected_output",
     [
-        (_empty, "None"),
+        (_empty, "Any"),
         (int, "int"),
     ],
 )
@@ -361,12 +362,15 @@ def test_build_command_method_body(method_definition):
         """Do some func doc."""
         return 42
 
-    with patch(
-        "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
-        return_value=False,
-    ), patch(
-        "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
-        return_value=False,
+    with (
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
+            return_value=False,
+        ),
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
+            return_value=False,
+        ),
     ):
         output = method_definition.build_command_method_body(
             path="openbb_core.app.static.container.Container", func=some_func
@@ -383,12 +387,15 @@ def test_build_command_method(method_definition):
         """Do some func doc."""
         return 42
 
-    with patch(
-        "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
-        return_value=False,
-    ), patch(
-        "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
-        return_value=False,
+    with (
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
+            return_value=False,
+        ),
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
+            return_value=False,
+        ),
     ):
         output = method_definition.build_command_method(
             path="openbb_core.app.static.container.Container",
@@ -398,6 +405,123 @@ def test_build_command_method(method_definition):
 
     assert output
     assert isinstance(output, str)
+
+
+class MyPostBody(BaseModel):
+    """My post body model."""
+
+    field1: str = Field(description="A string field.")
+    field2: int = Field(default=10, description="An integer field.")
+
+
+def mock_get_endpoint(
+    param1: str,
+    param2: int | None = None,
+):
+    """This is a mock GET endpoint."""
+
+
+def mock_post_endpoint(
+    body: MyPostBody,
+):
+    """This is a mock POST endpoint."""
+
+
+class MockDep:
+    """Mock dependency class."""
+
+    def __init__(self):
+        self.value = "real_dependency_value"
+
+
+def get_mock_dep():
+    """This is a real mock dependency."""
+    return MockDep()
+
+
+def mock_endpoint_with_real_dependency(
+    dep: MockDep = Depends(get_mock_dep),
+):
+    """This is a mock endpoint with a real dependency."""
+
+
+def test_build_command_method_get_endpoint(method_definition):
+    """Test build_command_method with a GET endpoint."""
+    with (
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
+            return_value=False,
+        ),
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
+            return_value=False,
+        ),
+    ):
+        output = method_definition.build_command_method(
+            path="/test/get",
+            func=mock_get_endpoint,
+            model_name=None,
+        )
+
+    assert "def get(" in output
+    assert "param1: Annotated[\n            str" in output
+    assert "Annotated[\n            int | None,\n" in output
+    assert "This is a mock GET endpoint." in output
+    assert "return self._run(" in output
+    assert '"/test/get",' in output
+    assert "param1=param1," in output
+    assert "param2=param2," in output
+
+
+def test_build_command_method_post_endpoint(method_definition):
+    """Test build_command_method with a POST endpoint."""
+    with (
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
+            return_value=False,
+        ),
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
+            return_value=False,
+        ),
+    ):
+        output = method_definition.build_command_method(
+            path="/test/mock_post_endpoint",
+            func=mock_post_endpoint,
+            model_name=None,
+        )
+
+    assert "def mock_post_endpoint(" in output
+    assert "body: Annotated[\n            MyPostBody," in output
+    assert "This is a mock POST endpoint." in output
+    assert "return self._run(" in output
+    assert '"/test/mock_post_endpoint",' in output
+    assert "body=body," in output
+
+
+def test_build_command_method_with_dependency(method_definition):
+    """Test build_command_method with a dependency."""
+    with (
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_data_processing_function",
+            return_value=False,
+        ),
+        patch(
+            "openbb_core.app.static.package_builder.MethodDefinition.is_deprecated_function",
+            return_value=False,
+        ),
+    ):
+        output = method_definition.build_command_method(
+            path="/test/dependency",
+            func=mock_endpoint_with_real_dependency,
+            model_name=None,
+        )
+
+    assert "def dependency(" in output
+    assert "dep: Annotated[" in output
+    assert "MockDep" in output
+    assert "get_mock_dep" in output
+    assert "dep=dep," in output
 
 
 @pytest.fixture(scope="module")
@@ -553,7 +677,7 @@ def test_generate_model_docstring(docstring_generator):
         explicit_params=explicit_dict,
         kwarg_params=kwarg_params,
         returns=returns,
-        results_type="List[WorldNews]",
+        results_type="list[WorldNews]",
         sections=sections,
     )
 
@@ -568,10 +692,10 @@ def test_generate_model_docstring(docstring_generator):
     "type_, expected",
     [
         (Any, []),
-        (List[str], ["List"]),
-        (Dict[str, str], ["Dict"]),
-        (Tuple[str], ["Tuple"]),
-        (Union[List[str], Dict[str, str], Tuple[str]], ["List", "Dict", "Tuple"]),
+        (list[str], ["list"]),
+        (dict[str, str], ["dict"]),
+        (tuple[str], ["tuple"]),
+        (list[str] | dict[str, str] | tuple[str], ["list", "dict", "tuple"]),
     ],
 )
 def test__get_generic_types(docstring_generator, type_, expected):
@@ -584,13 +708,13 @@ def test__get_generic_types(docstring_generator, type_, expected):
     "items, model, expected",
     [
         ([], "test_model", "test_model"),
-        (["List"], "test_model", "List[test_model]"),
-        (["Dict"], "test_model", "Dict[str, test_model]"),
-        (["Tuple"], "test_model", "Tuple[test_model]"),
+        (["list"], "test_model", "list[test_model]"),
+        (["dict"], "test_model", "dict[str, test_model]"),
+        (["tuple"], "test_model", "tuple[test_model]"),
         (
-            ["List", "Dict", "Tuple"],
+            ["list", "dict", "tuple"],
             "test_model",
-            "Union[List[test_model], Dict[str, test_model], Tuple[test_model]]",
+            "list[test_model] | dict[str, test_model] | tuple[test_model]",
         ),
     ],
 )
@@ -698,9 +822,10 @@ def test_package_diff(
         return ext_installed.select(**{"group": group})
 
     PATH = "openbb_core.app.static.package_builder."
-    with patch(PATH + "entry_points", mock_entry_points), patch.object(
-        EntryPoint, "dist", new_callable=PropertyMock
-    ) as mock_obj:
+    with (
+        patch(PATH + "entry_points", mock_entry_points),
+        patch.object(EntryPoint, "dist", new_callable=PropertyMock) as mock_obj,
+    ):
 
         class MockPathDistribution:
             version = ext_inst_version
@@ -728,9 +853,11 @@ def test_package_diff(
 def test_auto_build(package_builder, add, remove, openbb_auto_build):
     """Test auto build."""
 
-    with patch.object(PackageBuilder, "_diff") as mock_assets_diff, patch.object(
-        PackageBuilder, "build"
-    ) as mock_build, patch.object(Env, "AUTO_BUILD", openbb_auto_build):
+    with (
+        patch.object(PackageBuilder, "_diff") as mock_assets_diff,
+        patch.object(PackageBuilder, "build") as mock_build,
+        patch.object(Env, "AUTO_BUILD", openbb_auto_build),
+    ):
         mock_assets_diff.return_value = add, remove
 
         package_builder.auto_build()
@@ -741,3 +868,31 @@ def test_auto_build(package_builder, add, remove, openbb_auto_build):
     else:
         mock_assets_diff.assert_not_called()
         mock_build.assert_not_called()
+
+
+def test_is_safe_dependency(method_definition):
+    """Test dependency safety detection."""
+
+    class MockDep:
+        """Mock dependency."""
+
+    def safe_dependency(optional: str = "value") -> int:
+        return 1
+
+    def unsafe_dependency(request: Request):
+        return request
+
+    def optional_request_dependency(optional: Request | None = None) -> MockDep:
+        return MockDep()
+
+    def none_return_dependency(optional: str = "value") -> None:
+        return None
+
+    def optional_return_dependency(optional: str = "value") -> MockDep | None:
+        return MockDep()
+
+    assert method_definition._is_safe_dependency(safe_dependency)
+    assert not method_definition._is_safe_dependency(unsafe_dependency)
+    assert not method_definition._is_safe_dependency(optional_request_dependency)
+    assert not method_definition._is_safe_dependency(none_return_dependency)
+    assert method_definition._is_safe_dependency(optional_return_dependency)

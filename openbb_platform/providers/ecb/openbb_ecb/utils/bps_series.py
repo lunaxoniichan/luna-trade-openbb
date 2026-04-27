@@ -1,6 +1,6 @@
 """Definitions and helpers for the BPS (Balance of Payments) ECB Series."""
 
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 BPS_FREQUENCIES = Literal["monthly", "quarterly"]
 BPS_FREQUENCIES_DICT = {"monthly": "M", "quarterly": "Q"}
@@ -49,7 +49,7 @@ BPS_COUNTRIES_DICT = {
 def generate_bps_series_ids(
     frequency: BPS_FREQUENCIES = "monthly",
     report_type: BPS_REPORT_TYPES = "main",
-    country: Optional[BPS_COUNTRIES] = None,
+    country: BPS_COUNTRIES | None = None,
 ) -> Any:
     """Generate series ids for EU area balance of payments reports."""
 
@@ -100,7 +100,7 @@ def generate_bps_series_ids(
             financial_derivatives=f"BPS.{freq}.N.I9.W1.S1.S1.T.N.FA.F.F7.T.EUR._T.T.N.ALL",
             other_investment=f"BPS.{freq}.N.I9.W1.S1.S1.T.N.FA.O.F._Z.EUR._T._X.N.ALL",
             reserve_assets=f"BPS.{freq}.N.I9.W1.S121.S1.T.A.FA.R.F._Z.EUR.X1._X.N.ALL",
-            errors_and_ommissions=f"BPS.{freq}.N.I9.W1.S1.S1.T.N.EO._Z._Z._Z.EUR._T._X.N.ALL",
+            errors_and_omissions=f"BPS.{freq}.N.I9.W1.S1.S1.T.N.EO._Z._Z._Z.EUR._T._X.N.ALL",
         )
         return main_items
 

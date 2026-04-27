@@ -2,8 +2,9 @@
 
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
+from fastapi import APIRouter, FastAPI
 from importlib_metadata import EntryPoint, EntryPoints, entry_points
 from openbb_core.app.model.abstract.singleton import SingletonMeta
 from openbb_core.app.model.extension import Extension
@@ -21,7 +22,7 @@ class OpenBBGroups(Enum):
     obbject = "openbb_obbject_extension"
 
     @staticmethod
-    def groups() -> List[str]:
+    def groups() -> list[str]:
         """Return the OpenBBGroups."""
         return [
             OpenBBGroups.core.value,
@@ -46,9 +47,26 @@ class ExtensionLoader(metaclass=SingletonMeta):
         self._provider_entry_points: EntryPoints = self._sorted_entry_points(
             group=OpenBBGroups.provider.value
         )
-        self._obbject_objects: Dict[str, Extension] = {}
-        self._core_objects: Dict[str, Router] = {}
-        self._provider_objects: Dict[str, Provider] = {}
+        self._obbject_objects: dict[str, Extension] = {}
+        self._core_objects: dict[str, Router] = {}
+        self._provider_objects: dict[str, Provider] = {}
+        self._on_command_output_callbacks: dict[str, list[Extension]] = {}
+        self._register_command_output_callbacks()
+
+    @property
+    def on_command_output_callbacks(self) -> dict[str, list[Extension]]:
+        """Return the on command output callbacks."""
+        return self._on_command_output_callbacks
+
+    def _register_command_output_callbacks(self) -> None:
+        """Register extensions that act on command output."""
+        for ext in self.obbject_objects.values():
+            if ext.on_command_output:
+                paths = ext.command_output_paths or ["*"]
+                for path in paths:
+                    if path not in self._on_command_output_callbacks:
+                        self._on_command_output_callbacks[path] = []
+                    self._on_command_output_callbacks[path].append(ext)
 
     @property
     def obbject_entry_points(self) -> EntryPoints:
@@ -66,7 +84,7 @@ class ExtensionLoader(metaclass=SingletonMeta):
         return self._provider_entry_points
 
     @property
-    def entry_points(self) -> List[EntryPoints]:
+    def entry_points(self) -> list[EntryPoints]:
         """Return the entry points."""
         return [
             self._core_entry_points,
@@ -77,25 +95,25 @@ class ExtensionLoader(metaclass=SingletonMeta):
     @staticmethod
     def _get_entry_point(
         entry_points_: EntryPoints, ext_name: str
-    ) -> Optional[EntryPoint]:
+    ) -> EntryPoint | None:
         """Given an extension name and a list of entry points, return the corresponding entry point."""
         return next((ep for ep in entry_points_ if ep.name == ext_name), None)
 
-    def get_obbject_entry_point(self, ext_name: str) -> Optional[EntryPoint]:
+    def get_obbject_entry_point(self, ext_name: str) -> EntryPoint | None:
         """Given an extension name, return the corresponding entry point."""
         return self._get_entry_point(self._obbject_entry_points, ext_name)
 
-    def get_core_entry_point(self, ext_name: str) -> Optional[EntryPoint]:
+    def get_core_entry_point(self, ext_name: str) -> EntryPoint | None:
         """Given an extension name, return the corresponding entry point."""
         return self._get_entry_point(self._core_entry_points, ext_name)
 
-    def get_provider_entry_point(self, ext_name: str) -> Optional[EntryPoint]:
+    def get_provider_entry_point(self, ext_name: str) -> EntryPoint | None:
         """Given an extension name, return the corresponding entry point."""
         return self._get_entry_point(self._provider_entry_points, ext_name)
 
     @property
     @lru_cache
-    def obbject_objects(self) -> Dict[str, Extension]:
+    def obbject_objects(self) -> dict[str, Extension]:
         """Return a dict of obbject extension objects."""
         self._obbject_objects = self._load_entry_points(
             self._obbject_entry_points, OpenBBGroups.obbject
@@ -104,7 +122,7 @@ class ExtensionLoader(metaclass=SingletonMeta):
 
     @property
     @lru_cache
-    def core_objects(self) -> Dict[str, "Router"]:
+    def core_objects(self) -> dict[str, "Router"]:
         """Return a dict of core extension objects."""
         self._core_objects = self._load_entry_points(
             self._core_entry_points, OpenBBGroups.core
@@ -113,7 +131,7 @@ class ExtensionLoader(metaclass=SingletonMeta):
 
     @property
     @lru_cache
-    def provider_objects(self) -> Dict[str, "Provider"]:
+    def provider_objects(self) -> dict[str, "Provider"]:
         """Return a dict of provider extension objects."""
         self._provider_objects = self._load_entry_points(
             self._provider_entry_points, OpenBBGroups.provider
@@ -127,10 +145,10 @@ class ExtensionLoader(metaclass=SingletonMeta):
 
     def _load_entry_points(
         self, entry_points_: EntryPoints, group: OpenBBGroups
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return a dict of objects matching the entry points."""
 
-        def load_obbject(eps: EntryPoints) -> Dict[str, Extension]:
+        def load_obbject(eps: EntryPoints) -> dict[str, Extension]:
             """
             Return a dictionary of obbject objects.
 
@@ -142,16 +160,24 @@ class ExtensionLoader(metaclass=SingletonMeta):
                 if isinstance((entry := ep.load()), Extension)
             }
 
-        def load_core(eps: EntryPoints) -> Dict[str, "Router"]:
+        def load_core(eps: EntryPoints) -> dict[str, "Router"]:
             """Return a dictionary of core objects."""
             # pylint: disable=import-outside-toplevel
             from openbb_core.app.router import Router
 
-            return {
-                ep.name: entry for ep in eps if isinstance((entry := ep.load()), Router)
-            }
+            entries: dict[str, Router] = {}
+            for ep in eps:
+                entry = ep.load()
+                if isinstance(entry, Router):
+                    entries[ep.name] = entry
+                    continue
+                if isinstance(entry, FastAPI):
+                    entry = entry.router
+                if isinstance(entry, APIRouter):
+                    entries[ep.name] = Router.from_fastapi(entry)
+            return entries
 
-        def load_provider(eps: EntryPoints) -> Dict[str, "Provider"]:
+        def load_provider(eps: EntryPoints) -> dict[str, "Provider"]:
             """
             Return a dictionary of provider objects.
 

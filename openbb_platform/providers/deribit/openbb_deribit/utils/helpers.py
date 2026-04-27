@@ -1,6 +1,6 @@
 """Deribit Helpers Module."""
 
-from typing import Literal, Optional, Union
+from typing import Literal
 
 from async_lru import alru_cache
 from openbb_core.app.model.abstract.error import OpenBBError
@@ -51,7 +51,7 @@ INTERVAL_MAP = {
 @alru_cache(maxsize=64)
 async def get_instruments(
     currency: Currencies = "BTC",
-    derivative_type: Optional[DerivativeTypes] = None,
+    derivative_type: DerivativeTypes | None = None,
     expired: bool = False,
 ) -> list[dict]:
     """
@@ -202,9 +202,9 @@ async def get_ticker_data(symbol: str) -> dict:
 
     try:
         response = await amake_request(url)
-        if response.get("error"):
-            raise OpenBBError(response.get("error"))
-        data = response.get("result", {})
+        if response.get("error"):  # type: ignore[union-attr]
+            raise OpenBBError(response.get("error"))  # type: ignore[union-attr]
+        data = response.get("result", {})  # type: ignore[union-attr]
         stats = data.pop("stats", {})
         return {**data, **stats}
 
@@ -282,20 +282,20 @@ async def get_ohlc_data(
     async def get_one(url):
         """Get data from one url."""
         json_response = await amake_request(url)
-        if json_response.get("error"):
-            raise ValueError(json_response["error"])
-        if json_response.get("result"):
-            result = json_response["result"]
+        if json_response.get("error"):  # type: ignore[union-attr]
+            raise ValueError(json_response["error"])  # type: ignore[call-overload]
+        if json_response.get("result"):  # type: ignore[union-attr]
+            result = json_response["result"]  # type: ignore[call-overload]
             df = DataFrame(result)
             df = (
                 df.drop(columns=["status"])
                 .rename(columns={"ticks": "date", "cost": "volume_notional"})
                 .convert_dtypes()
             )
-            df.date = to_datetime(df.date, unit="ms", origin="unix", utc=True)
+            df["date"] = to_datetime(df.date, unit="ms", origin="unix", utc=True)
             if interval == "1D":
                 df.date = df.date.dt.date
-            df.loc[:, "symbol"] = symbol
+            df["symbol"] = symbol
             results.extend(
                 df[
                     [
@@ -327,7 +327,7 @@ async def get_ohlc_data(
     raise EmptyDataError("No data found for the given symbol and dates.")
 
 
-async def check_ohlc_symbol(symbol: str) -> Union[bool, str]:
+async def check_ohlc_symbol(symbol: str) -> bool | str:
     """
     Check if the symbol has OHLC data.
 

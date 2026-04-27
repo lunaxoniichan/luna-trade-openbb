@@ -3,7 +3,7 @@
 # pylint: disable=unused-argument
 
 from datetime import datetime
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.cash_flow import (
@@ -30,7 +30,7 @@ class YFinanceCashFlowStatementQueryParams(CashFlowStatementQueryParams):
         default="annual",
         description=QUERY_DESCRIPTIONS.get("period", ""),
     )
-    limit: Optional[int] = Field(
+    limit: int | None = Field(
         default=5,
         description=QUERY_DESCRIPTIONS.get("limit", ""),
         le=5,
@@ -73,30 +73,23 @@ class YFinanceCashFlowStatementFetcher(
     @staticmethod
     def extract_data(
         query: YFinanceCashFlowStatementQueryParams,
-        credentials: Optional[dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> list[YFinanceCashFlowStatementData]:
         """Extract the data from the Yahoo Finance endpoints."""
         # pylint: disable=import-outside-toplevel
         import json  # noqa
-        from curl_adapter import CurlCffiAdapter
         from numpy import nan
         from openbb_core.provider.utils.errors import EmptyDataError
         from openbb_core.provider.utils.helpers import (
-            get_requests_session,
             to_snake_case,
         )
         from yfinance import Ticker
 
         period = "yearly" if query.period == "annual" else "quarterly"  # type: ignore
-        session = get_requests_session()
-        session.mount("https://", CurlCffiAdapter())
-        session.mount("http://", CurlCffiAdapter())
-
-        data = Ticker(
-            query.symbol,
-            session=session,
-        ).get_cash_flow(as_dict=False, pretty=False, freq=period)
+        data = Ticker(query.symbol).get_cash_flow(
+            as_dict=False, pretty=False, freq=period
+        )
 
         if data is None:
             raise EmptyDataError()

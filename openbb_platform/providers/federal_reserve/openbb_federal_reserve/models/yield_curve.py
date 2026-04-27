@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 from openbb_core.provider.abstract.fetcher import Fetcher
 from openbb_core.provider.standard_models.yield_curve import (
@@ -41,20 +41,20 @@ class FederalReserveYieldCurveData(YieldCurveData):
 class FederalReserveYieldCurveFetcher(
     Fetcher[
         FederalReserveYieldCurveQueryParams,
-        List[FederalReserveYieldCurveData],
+        list[FederalReserveYieldCurveData],
     ]
 ):
     """FederalReserve Yield Curve Fetcher."""
 
     @staticmethod
-    def transform_query(params: Dict[str, Any]) -> FederalReserveYieldCurveQueryParams:
+    def transform_query(params: dict[str, Any]) -> FederalReserveYieldCurveQueryParams:
         """Transform the query params."""
         return FederalReserveYieldCurveQueryParams(**params)
 
     @staticmethod
     def extract_data(
         query: FederalReserveYieldCurveQueryParams,
-        credentials: Optional[Dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> "DataFrame":
         """Extract the raw data."""
@@ -79,14 +79,14 @@ class FederalReserveYieldCurveFetcher(
     @staticmethod
     def transform_data(
         query: FederalReserveYieldCurveQueryParams, data: "DataFrame", **kwargs: Any
-    ) -> List[FederalReserveYieldCurveData]:
+    ) -> list[FederalReserveYieldCurveData]:
         """Return the transformed data."""
         # pylint: disable=import-outside-toplevel
         from pandas import Categorical, DatetimeIndex
 
         df = data.copy()
         df.set_index("date", inplace=True)
-        dates = query.date.split(",") if query.date else [df.index.max()]
+        dates = query.date.split(",") if query.date else [df.index.max()]  # type: ignore
         df.index = DatetimeIndex(df.index)
         dates_list = DatetimeIndex(dates)
         df.columns.name = "maturity"
@@ -111,7 +111,7 @@ class FederalReserveYieldCurveFetcher(
         flattened_data = flattened_data.sort_values(
             by=["date", "maturity"]
         ).reset_index(drop=True)
-        flattened_data.loc[:, "date"] = flattened_data["date"].dt.strftime("%Y-%m-%d")
+        flattened_data["date"] = flattened_data["date"].dt.strftime("%Y-%m-%d")
         records = flattened_data.to_dict(orient="records")
 
         return [FederalReserveYieldCurveData.model_validate(d) for d in records]

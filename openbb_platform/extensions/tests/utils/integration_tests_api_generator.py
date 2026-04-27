@@ -3,7 +3,8 @@
 import argparse
 import os
 from pathlib import Path
-from typing import Dict, List, Literal, Type, Union, get_type_hints
+import inspect as _inspect
+from typing import Literal
 
 import pytest
 import requests
@@ -14,7 +15,7 @@ from openbb_core.app.router import CommandMap
 from .integration_tests_generator import get_test_params
 
 
-def get_http_method(api_paths: Dict[str, dict], route: str):
+def get_http_method(api_paths: dict[str, dict], route: str):
     """Given a set of paths and a route, return the http method for that route."""
     route_info = api_paths.get(route)
     if not route_info:
@@ -22,7 +23,7 @@ def get_http_method(api_paths: Dict[str, dict], route: str):
     return list(route_info.keys())[0]
 
 
-def get_post_flat_params(hints: Dict[str, Type]):
+def get_post_flat_params(hints: dict[str, type]):
     """Flattens the params for a post request."""
     return list(hints.keys())
 
@@ -58,7 +59,7 @@ def headers():
 
 def write_test_w_template(
     http_method: Literal["post", "get"],
-    params_list: List[Dict[str, Union[str, bool]]],
+    params_list: list[dict[str, str | bool]],
     route: str,
     path: str,
     chart: bool = False,
@@ -114,8 +115,8 @@ def test_exists(route: str, path: str):
 def write_commands_integration_tests(
     command_map: CommandMap,
     provider_interface: ProviderInterface,
-    api_paths: Dict[str, dict],
-) -> List[str]:
+    api_paths: dict[str, dict],
+) -> list[str]:
     """Write the commands integration tests."""
     commands_not_found = []
 
@@ -131,17 +132,16 @@ def write_commands_integration_tests(
             "openbb_platform", "extensions", menu, "integration", f"test_{menu}_api.py"
         )
         if not os.path.exists(path):
-            write_init_test_template(http_method=http_method, path=path)
+            write_init_test_template(http_method=http_method, path=path)  # type: ignore
 
         if not http_method:
             commands_not_found.append(route)
         else:
-            hints = get_type_hints(cm_map[route])
-            hints.pop("cc", None)
-            hints.pop("return", None)
+            sig = _inspect.signature(cm_map[route])
+            param_names = [k for k in sig.parameters.keys() if k not in ("cc", "return")]
 
             params_list = (
-                [{k: "" for k in get_post_flat_params(hints)}]
+                [{k: "" for k in param_names}]
                 if http_method == "post"
                 else get_test_params(
                     model_name=cm_models[route],  # type: ignore
@@ -151,8 +151,8 @@ def write_commands_integration_tests(
 
             if not test_exists(route=route, path=path):
                 write_test_w_template(
-                    http_method=http_method,
-                    params_list=params_list,
+                    http_method=http_method,  # type: ignore
+                    params_list=params_list,  # type: ignore
                     route=route,
                     path=path,
                 )

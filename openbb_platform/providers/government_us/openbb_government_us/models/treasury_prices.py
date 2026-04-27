@@ -2,7 +2,7 @@
 
 # pylint: disable=unused-argument
 
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Literal
 
 from openbb_core.app.model.abstract.error import OpenBBError
 from openbb_core.provider.abstract.fetcher import Fetcher
@@ -17,8 +17,8 @@ from pydantic import Field
 class GovernmentUSTreasuryPricesQueryParams(TreasuryPricesQueryParams):
     """US Government Treasury Prices Query."""
 
-    cusip: Optional[str] = Field(description="Filter by CUSIP.", default=None)
-    security_type: Optional[Literal["bill", "note", "bond", "tips", "frn"]] = Field(
+    cusip: str | None = Field(description="Filter by CUSIP.", default=None)
+    security_type: Literal["bill", "note", "bond", "tips", "frn"] | None = Field(
         description="Filter by security type.",
         default=None,
     )
@@ -31,14 +31,14 @@ class GovernmentUSTreasuryPricesData(TreasuryPricesData):
 class GovernmentUSTreasuryPricesFetcher(
     Fetcher[
         GovernmentUSTreasuryPricesQueryParams,
-        List[GovernmentUSTreasuryPricesData],
+        list[GovernmentUSTreasuryPricesData],
     ]
 ):
     """US Government Treasury Prices Fetcher."""
 
     @staticmethod
     def transform_query(
-        params: Dict[str, Any]
+        params: dict[str, Any],
     ) -> GovernmentUSTreasuryPricesQueryParams:
         """Transform query params."""
         # pylint: disable=import-outside-toplevel
@@ -55,7 +55,7 @@ class GovernmentUSTreasuryPricesFetcher(
     @staticmethod
     def extract_data(
         query: GovernmentUSTreasuryPricesQueryParams,
-        credentials: Optional[Dict[str, str]],
+        credentials: dict[str, str] | None,
         **kwargs: Any,
     ) -> str:
         """Extract the raw data from US Treasury website."""
@@ -98,11 +98,12 @@ class GovernmentUSTreasuryPricesFetcher(
         query: GovernmentUSTreasuryPricesQueryParams,
         data: str,
         **kwargs: Any,
-    ) -> List[GovernmentUSTreasuryPricesData]:
+    ) -> list[GovernmentUSTreasuryPricesData]:
         """Transform the data."""
         # pylint: disable=import-outside-toplevel
-        from io import StringIO  # noqa
-        from pandas import Index, read_csv, to_datetime  # noqa
+        from math import isnan  # noqa
+        from io import StringIO
+        from pandas import Index, read_csv, to_datetime
 
         try:
             if not data:
@@ -141,7 +142,15 @@ class GovernmentUSTreasuryPricesFetcher(
             ]
         if query.cusip is not None:
             results = results[results["cusip"] == query.cusip]
+
+        def clean_nan(d: dict) -> dict:
+            """Replace nan values with None for Pydantic validation."""
+            return {
+                k: None if isinstance(v, float) and isnan(v) else v
+                for k, v in d.items()
+            }
+
         return [
-            GovernmentUSTreasuryPricesData.model_validate(d)
+            GovernmentUSTreasuryPricesData.model_validate(clean_nan(d))
             for d in results.to_dict("records")
         ]

@@ -4,8 +4,11 @@
       "description": "View SEC filings by company.",
       "category": "Open Document",
       "type": "multi_file_viewer",
-      "searchCategory": "Open Document",
       "widgetId": "nasdaq_company_filings",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "open_document"
+      },
       "params": [
         {
           "paramName": "symbol",
@@ -39,9 +42,13 @@
           "paramName": "year",
           "label": "Calendar Year",
           "description": "Calendar year for the filings.",
-          "value": 2025,
+          "value": 2026,
           "type": "number",
           "options": [
+            {
+              "label": "2026",
+              "value": 2026
+            },
             {
               "label": "2025",
               "value": 2025
@@ -210,7 +217,7 @@
           ]
         }
       ],
-      "endpoint": "open_document",
+      "endpoint": "/open_document",
       "runButton": false,
       "gridData": {
         "w": 40,
@@ -232,8 +239,11 @@
       "description": "Upcoming, and historical, company earnings releases (US Markets).",
       "category": "Equity",
       "type": "table",
-      "searchCategory": "Equity",
       "widgetId": "nasdaq_earnings_calendar",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "earnings_calendar"
+      },
       "params": [
         {
           "label": "Start Date",
@@ -264,7 +274,7 @@
           }
         }
       ],
-      "endpoint": "earnings_calendar",
+      "endpoint": "/earnings_calendar",
       "runButton": false,
       "gridData": {
         "w": 40,
@@ -382,8 +392,11 @@
       "description": "Upcoming, and historical, dividend payments (US Markets).",
       "category": "Equity",
       "type": "table",
-      "searchCategory": "Equity",
       "widgetId": "nasdaq_dividends_calendar",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "dividend_calendar"
+      },
       "params": [
         {
           "label": "Start Date",
@@ -414,7 +427,7 @@
           }
         }
       ],
-      "endpoint": "dividend_calendar",
+      "endpoint": "/dividend_calendar",
       "runButton": false,
       "gridData": {
         "w": 40,
@@ -503,8 +516,11 @@
       "description": "Historical dividend payments for a given symbol.",
       "category": "Equity",
       "type": "table",
-      "searchCategory": "Equity",
       "widgetId": "nasdaq_historical_dividends",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "historical_dividends"
+      },
       "params": [
         {
           "label": "Symbol",
@@ -538,7 +554,7 @@
           "paramName": "end_date"
         }
       ],
-      "endpoint": "historical_dividends",
+      "endpoint": "/historical_dividends",
       "runButton": false,
       "gridData": {
         "w": 40,
@@ -548,7 +564,17 @@
         "dataKey": "",
         "table": {
           "showAll": true,
+          "enableAdvanced": true,
           "columnsDefs": [
+            {
+                "cellDataType": "text",
+                "field": "symbol",
+                "formatterFn": "none",
+                "headerName": "Symbol",
+                "headerTooltip": "Symbol representing the entity requested in the data.",
+                "pinned": "left",
+                "renderFn": null
+            },
             {
               "field": "ex_dividend_date",
               "formatterFn": null,
@@ -612,8 +638,11 @@
       "description": "IPO announcements and calendar.",
       "category": "Equity",
       "type": "table",
-      "searchCategory": "Equity",
       "widgetId": "nasdaq_ipo_calendar",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "ipo_calendar"
+      },
       "params": [
         {
           "label": "Start Date",
@@ -679,7 +708,7 @@
           "paramName": "is_spo"
         }
       ],
-      "endpoint": "ipo_calendar",
+      "endpoint": "/ipo_calendar",
       "runButton": false,
       "gridData": {
         "w": 40,
@@ -775,8 +804,11 @@
       "description": "Upcoming, and historical, macroeconomic events.",
       "category": "Economy",
       "type": "table",
-      "searchCategory": "Equity",
       "widgetId": "nasdaq_economic_calendar",
+      "mcp_tool": {
+        "mcp_server": "Open Data Platform",
+        "tool_id": "economic_calendar"
+      },
       "params": [
         {
           "label": "Start Date",
@@ -823,7 +855,7 @@
             },
             {
               "label": "Singapore",
-              "value": "signapore"
+              "value": "singapore"
             },
             {
               "label": "South Korea",
@@ -888,7 +920,7 @@
           ]
         }
       ],
-      "endpoint": "economic_calendar",
+      "endpoint": "/economic_calendar",
       "runButton": false,
       "gridData": {
         "w": 40,

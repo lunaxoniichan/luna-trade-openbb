@@ -52,6 +52,14 @@ def headers():
                 "end_date": "2023-11-03",
             }
         ),
+        (
+            {
+                "provider": "fred",
+                "start_date": "2025-07-01",
+                "end_date": "2025-07-02",
+                "release_id": None,
+            }
+        ),
     ],
 )
 @pytest.mark.integration
@@ -101,6 +109,19 @@ def test_economy_calendar(params, headers):
                 "end_date": "2023-06-06",
                 "provider": "oecd",
                 "expenditure": "transport",
+            }
+        ),
+        (
+            {
+                "country": "portugal,spain",
+                "transform": "yoy",
+                "frequency": "quarter",
+                "harmonized": False,
+                "start_date": "2020-01-01",
+                "end_date": "2023-06-06",
+                "provider": "imf",
+                "expenditure": "transport",
+                "limit": None,
             }
         ),
     ],
@@ -474,60 +495,6 @@ def test_economy_composite_leading_indicator(params, headers):
 @pytest.mark.parametrize(
     "params",
     [
-        ({"start_date": "2023-01-01", "end_date": "2023-06-06", "provider": "oecd"}),
-        (
-            {
-                "country": "united_states",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_short_term_interest_rate(params, headers):
-    """Test the economy short term interest rate endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/economy/short_term_interest_rate?{query_str}"
-    result = requests.get(url, headers=headers, timeout=30)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        ({"start_date": "2023-01-01", "end_date": "2023-06-06", "provider": "oecd"}),
-        (
-            {
-                "country": "united_states",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_long_term_interest_rate(params, headers):
-    """Test the economy long term interest rate endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/economy/long_term_interest_rate?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
         (
             {
                 "provider": "fred",
@@ -604,21 +571,15 @@ def test_economy_fred_regional(params, headers):
         (
             {
                 "provider": "imf",
-                "country": "us,uk,jp",
-                "symbol": "gold_reserves",
-                "start_date": "2022-01-01",
-                "end_date": "2023-12-31",
-                "frequency": "annual",
-            }
-        ),
-        (
-            {
-                "provider": "imf",
-                "country": "all",
-                "symbol": "derivative_assets",
-                "start_date": "2022-01-01",
-                "end_date": "2023-12-31",
-                "frequency": "annual",
+                "country": "*",
+                "symbol": "IL::RGV_REVS",
+                "start_date": "2025-09-30",
+                "end_date": None,
+                "frequency": "month",
+                "transform": None,
+                "dimension_values": None,
+                "limit": 1,
+                "pivot": False,
             }
         ),
     ],
@@ -639,7 +600,15 @@ def test_economy_indicators(params, headers):
     "params",
     [
         ({"provider": "econdb", "use_cache": False}),
-        ({"provider": "imf", "query": "balance sheet;households;debt"}),
+        (
+            {
+                "provider": "imf",
+                "query": "gold+volume",
+                "dataflows": None,
+                "keywords": None,
+                "symbol": None,
+            }
+        ),
     ],
 )
 @pytest.mark.integration
@@ -766,32 +735,6 @@ def test_economy_house_price_index(params, headers):
 
     query_str = get_querystring(params, [])
     url = f"http://0.0.0.0:8000/api/v1/economy/house_price_index?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        (
-            {
-                "country": "united_states,united_kingdom",
-                "frequency": "monthly",
-                "provider": "oecd",
-                "start_date": "2022-01-01",
-                "end_date": "2024-04-01",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_immediate_interest_rate(params, headers):
-    """Test the economy immediate_interest_rate."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/economy/immediate_interest_rate?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200
@@ -1204,39 +1147,6 @@ def test_economy_primary_dealer_fails(params, headers):
     [
         (
             {
-                "provider": "econdb",
-                "start_date": None,
-                "end_date": None,
-            }
-        ),
-        (
-            {
-                "provider": "imf",
-                "port_code": "port1201",
-                "start_date": "2023-01-01",
-                "end_date": "2023-01-31",
-                "country": None,
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_economy_port_volume(params, headers):
-    """Test the economy port volume endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/economy/port_volume?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        (
-            {
                 "provider": "imf",
                 "country": "us",
                 "counterpart": "world,eu",
@@ -1263,33 +1173,11 @@ def test_economy_direction_of_trade(params, headers):
 @pytest.mark.parametrize(
     "params",
     [
-        (
-            {
-                "provider": "federal_reserve",
-                "year": None,
-                "document_type": None,
-                "pdf_only": False,
-                "as_choices": False,
-            }
-        ),
-        (
-            {
-                "provider": "federal_reserve",
-                "year": None,
-                "document_type": None,
-                "pdf_only": False,
-                "as_choices": False,
-            }
-        ),
-        (
-            {
-                "provider": "federal_reserve",
-                "year": 2022,
-                "document_type": "minutes",
-                "pdf_only": True,
-                "as_choices": True,
-            }
-        ),
+        {
+            "provider": "federal_reserve",
+            "year": 2022,
+            "document_type": "minutes",
+        }
     ],
 )
 @pytest.mark.integration
@@ -1298,21 +1186,8 @@ def test_economy_fomc_documents(params, headers):
     params = {p: v for p, v in params.items() if v}
 
     query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/economy/fomc_documents?{query_str}"
+    url = f"http://localhost:8000/api/v1/economy/fomc_documents?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.integration
-def test_economy_fomc_documents_download(headers):
-    """Test the economy fomc documents download endpoint."""
-    params = {
-        "url": "https://www.federalreserve.gov/monetarypolicy/files/BeigeBook_20230118.pdf"
-    }
-
-    url = "http://0.0.0.0:8000/api/v1/economy/fomc_documents/download?"
-    result = requests.post(url, headers=headers, timeout=10, json=params)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200
 
@@ -1400,11 +1275,13 @@ def test_economy_shipping_chokepoint_info(params, headers):
 @pytest.mark.parametrize(
     "params",
     [
-        (
-            {
-                "provider": "imf",
-            }
-        ),
+        {
+            "provider": "imf",
+            "port_code": None,
+            "country": None,
+            "continent": None,
+            "limit": None,
+        }
     ],
 )
 @pytest.mark.integration
@@ -1414,6 +1291,51 @@ def test_economy_shipping_port_info(params, headers):
 
     query_str = get_querystring(params, [])
     url = f"http://0.0.0.0:8000/api/v1/economy/shipping/port_info?{query_str}"
+    result = requests.get(url, headers=headers, timeout=10)
+    assert isinstance(result, requests.Response)
+    assert result.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "provider": "federal_reserve",
+            "frequency": "summary",
+            "start_date": None,
+            "end_date": None,
+        }
+    ],
+)
+@pytest.mark.integration
+def test_economy_total_factor_productivity(params, headers):
+    """Test the economy total factor productivity endpoint."""
+    params = {p: v for p, v in params.items() if v}
+
+    query_str = get_querystring(params, [])
+    url = f"http://0.0.0.0:8000/api/v1/economy/total_factor_productivity?{query_str}"
+    result = requests.get(url, headers=headers, timeout=10)
+    assert isinstance(result, requests.Response)
+    assert result.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {
+            "provider": "federal_reserve",
+            "start_date": "2020-01-01",
+            "end_date": "2024-12-31",
+        }
+    ],
+)
+@pytest.mark.integration
+def test_economy_survey_inflation_expectations(params, headers):
+    """Test the economy survey inflation expectations endpoint."""
+    params = {p: v for p, v in params.items() if v}
+
+    query_str = get_querystring(params, [])
+    url = f"http://localhost:8000/api/v1/economy/survey/inflation_expectations?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200

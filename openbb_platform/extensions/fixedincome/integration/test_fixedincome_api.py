@@ -61,40 +61,6 @@ def test_fixedincome_government_treasury_rates(params, headers):
     ],
 )
 @pytest.mark.integration
-def test_fixedincome_sofr(params, headers):
-    """Test the SOFR endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/fixedincome/sofr?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        (
-            {
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-                "provider": "federal_reserve",
-            }
-        ),
-        (
-            {
-                "frequency": None,
-                "transform": None,
-                "aggregation_method": None,
-                "provider": "fred",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
 def test_fixedincome_rate_sofr(params, headers):
     """Test the SOFR endpoint."""
     params = {p: v for p, v in params.items() if v}
@@ -297,52 +263,6 @@ def test_fixedincome_rate_ecb(params, headers):
 
     query_str = get_querystring(params, [])
     url = f"http://0.0.0.0:8000/api/v1/fixedincome/rate/ecb?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        ({"start_date": "2023-01-01", "end_date": "2023-06-06", "index_type": "yield"}),
-        (
-            {
-                "category": "all",
-                "area": "us",
-                "grade": "non_sovereign",
-                "options": True,
-                "provider": "fred",
-                "start_date": "2023-01-01",
-                "end_date": "2023-06-06",
-                "index_type": "yield",
-            }
-        ),
-    ],
-)
-@pytest.mark.integration
-def test_fixedincome_corporate_ice_bofa(params, headers):
-    """Test the ICE BofA corporate yield index endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/fixedincome/corporate/ice_bofa?{query_str}"
-    result = requests.get(url, headers=headers, timeout=10)
-    assert isinstance(result, requests.Response)
-    assert result.status_code == 200
-
-
-@pytest.mark.parametrize(
-    "params",
-    [{"start_date": "2023-01-01", "end_date": "2023-06-06", "index_type": "aaa"}],
-)
-@pytest.mark.integration
-def test_fixedincome_corporate_moody(params, headers):
-    """Test the Moody's corporate yield index endpoint."""
-    params = {p: v for p, v in params.items() if v}
-
-    query_str = get_querystring(params, [])
-    url = f"http://0.0.0.0:8000/api/v1/fixedincome/corporate/moody?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200
@@ -773,6 +693,32 @@ def test_fixedincome_government_tips_yields(params, headers):
 
     query_str = get_querystring(params, [])
     url = f"http://0.0.0.0:8000/api/v1/fixedincome/government/tips_yields?{query_str}"
+    result = requests.get(url, headers=headers, timeout=10)
+    assert isinstance(result, requests.Response)
+    assert result.status_code == 200
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        ({}),
+        (
+            {
+                "provider": "federal_reserve",
+                "start_date": "2023-05-01",
+                "end_date": "2024-06-01",
+                "series_type": "beta0,sveny10",
+            }
+        ),
+    ],
+)
+@pytest.mark.integration
+def test_fixedincome_government_svensson_yield_curve(params, headers):
+    """Test the Svensson yield curve endpoint."""
+    params = {p: v for p, v in params.items() if v}
+
+    query_str = get_querystring(params, [])
+    url = f"http://localhost:8000/api/v1/fixedincome/government/svensson_yield_curve?{query_str}"
     result = requests.get(url, headers=headers, timeout=10)
     assert isinstance(result, requests.Response)
     assert result.status_code == 200
