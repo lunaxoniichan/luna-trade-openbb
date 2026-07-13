@@ -1,4 +1,13 @@
-"""Commodity Futures Trading Commission (CFTC) Router."""
+"""Commodity Futures Trading Commission (CFTC) Router.
+
+Fork note — null-guard in ``build_choices``. The CFTC catalog drifts and can
+return ``None`` for ``name`` / ``code`` / ``subcategory``. Upstream reads those
+via ``getattr(d, "x", "")``, whose default applies only when the attribute is
+ABSENT — a present-but-``None`` value still reaches ``.strip()`` and raises
+``AttributeError``. That runs inside the router lifespan, so it crashed platform
+startup and port 6900 never bound. Coerce with ``or ""`` and skip rows with no
+usable label/value.
+"""
 
 # pylint: disable=W0212,W0613
 
@@ -35,13 +44,17 @@ async def build_choices():
     choices: list[dict[str, str | dict[str, str | None]]] = []
 
     for d in contracts:
-        description = (
-            f"{getattr(d, 'subcategory', '').strip() or getattr(d, 'commodity_name', '').strip()}"
-            f"  | {getattr(d, 'code', '').strip()}"
-        )
+        name = (getattr(d, "name", "") or "").strip()
+        code = (getattr(d, "code", "") or "").strip()
+        subcategory = (getattr(d, "subcategory", "") or "").strip()
+        commodity_name = (getattr(d, "commodity_name", "") or "").strip()
+        # A row with no label or no value cannot be selected in Workspace.
+        if not name or not code:
+            continue
+        description = f"{subcategory or commodity_name}  | {code}"
         choice: dict[str, str | dict[str, str | None]] = {
-            "label": getattr(d, "name", "").strip(),
-            "value": getattr(d, "code", "").strip(),
+            "label": name,
+            "value": code,
             "extraInfo": {
                 "description": description,
                 "rightOfDescription": "",
