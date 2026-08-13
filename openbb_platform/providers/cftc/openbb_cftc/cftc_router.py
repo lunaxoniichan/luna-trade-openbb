@@ -1,7 +1,17 @@
-"""Commodity Futures Trading Commission (CFTC) Router."""
+"""Commodity Futures Trading Commission (CFTC) Router.
+
+Fork note — null-guard in ``build_choices``. The CFTC catalog drifts and can
+return ``None`` for ``name`` / ``code`` / ``subcategory``. Upstream reads those
+via ``getattr(d, "x", "")``, whose default applies only when the attribute is
+ABSENT — a present-but-``None`` value still reaches ``.strip()`` and raises
+``AttributeError``. That runs inside the router lifespan, so it crashed platform
+startup and port 6900 never bound. Coerce with ``or ""`` and skip rows with no
+usable label/value.
+"""
 
 # pylint: disable=W0212,W0613
 
+from contextlib import asynccontextmanager
 from typing import Any
 
 from openbb_core.app.model.command_context import CommandContext
@@ -19,6 +29,12 @@ router = Router(prefix="")
 COT_CHOICES: list[dict[str, str | dict[str, str | None]]] = []
 
 
+@asynccontextmanager
+async def _cot_router_lifespan(_):
+    await build_choices()
+    yield
+
+
 async def build_choices():
     """Build the choices for Workspace."""
     # pylint: disable=import-outside-toplevel
@@ -28,10 +44,21 @@ async def build_choices():
     choices: list[dict[str, str | dict[str, str | None]]] = []
 
     for d in contracts:
+        name = (getattr(d, "name", "") or "").strip()
+        code = (getattr(d, "code", "") or "").strip()
+        subcategory = (getattr(d, "subcategory", "") or "").strip()
+        commodity_name = (getattr(d, "commodity_name", "") or "").strip()
+        # A row with no label or no value cannot be selected in Workspace.
+        if not name or not code:
+            continue
+        description = f"{subcategory or commodity_name}  | {code}"
         choice: dict[str, str | dict[str, str | None]] = {
-            "label": d.name.strip(),  # type: ignore
-            "value": d.code.strip(),  # type: ignore
-            "extraInfo": {"description": f"{d.subcategory.strip()}  | {d.code.strip()}", "rightOfDescription": ""},  # type: ignore
+            "label": name,
+            "value": code,
+            "extraInfo": {
+                "description": description,
+                "rightOfDescription": "",
+            },
         }
         choices.append(choice)
 
@@ -40,7 +67,7 @@ async def build_choices():
     COT_CHOICES = choices
 
 
-router.api_router.add_event_handler("startup", build_choices)
+router.api_router.lifespan_context = _cot_router_lifespan
 
 
 async def get_cot_choices() -> list[dict[str, str | dict[str, str | None]]]:
@@ -127,7 +154,7 @@ async def cot(
 
 
 async def get_cftc_apps_json() -> list[dict[str, Any]]:
-    """Get the IMF apps.json file.
+    """Get the CFTC apps.json file.
 
     This endpoint serves the apps.json file containing OpenBB Workspace app configurations.
     It is automatically merged with any existing apps.json files in the Workspace and API.
